@@ -259,6 +259,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="{r("assets/site.css")}">
 <script type="application/ld+json">{ld_json}</script>
+{analytics_html()}
 </head>
 <body>
 <a class="skip" href="#main">본문 바로가기</a>
@@ -332,6 +333,19 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 
 
 BLOG_ID = "behalf1oj"
+
+
+def analytics_html():
+    a = getattr(C, "ANALYTICS", {})
+    out = ""
+    if a.get("ga4"):
+        g = e(a["ga4"])
+        out += (f'<script async src="https://www.googletagmanager.com/gtag/js?id={g}"></script>'
+                f"<script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments);}}gtag('js',new Date());gtag('config','{g}');</script>")
+    if a.get("naver"):
+        out += ('<script src="https://wcs.naver.net/wcslog.js"></script>'
+                f'<script>if(!window.wcs_add)window.wcs_add={{}};wcs_add["wa"]="{e(a["naver"])}";if(window.wcs){{wcs_do();}}</script>')
+    return out
 
 
 def business_ld():

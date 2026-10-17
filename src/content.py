@@ -5,6 +5,12 @@
 SITE_URL = "https://hanseungwoo555-ops.github.io/gangsanjawon"
 
 # 검색엔진 소유확인 코드. 네이버 서치어드바이저·구글 서치콘솔에서 'HTML 태그' 방식으로 받은 content 값을 넣는다.
+# 방문자 분석 도구 ID. 비워두면 넣지 않는다.
+ANALYTICS = {
+    "ga4": "",    # 구글 애널리틱스 측정 ID (G-로 시작)
+    "naver": "",  # 네이버 애널리틱스 사이트 ID
+}
+
 VERIFY = {
     "naver-site-verification": "",
     "google-site-verification": "",
