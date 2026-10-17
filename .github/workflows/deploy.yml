@@ -27,6 +27,8 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - name: 블로그·인스타 동기화 후 홈페이지 생성
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
         run: cd src && python build.py
       - name: 새로 받은 글·사진 저장
         run: |

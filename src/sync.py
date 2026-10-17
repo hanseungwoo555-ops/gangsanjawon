@@ -117,9 +117,43 @@ def sync_blog():
     print(f"blog: {len(posts)}개 글")
 
 
+def fetch_instagram_official(token):
+    """Instagram API(인스타그램 로그인 방식). GitHub 저장소 Secret IG_TOKEN 에 장기 토큰을 넣으면 사용된다."""
+    try:  # 토큰 유효기간(60일)을 실행할 때마다 연장한다. 실패해도 기존 토큰으로 계속 진행
+        get(f"https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token={token}")
+    except Exception:
+        pass
+    fields = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp"
+    data = json.loads(get(f"https://graph.instagram.com/me/media?fields={fields}&limit=24&access_token={token}"))["data"]
+    items = []
+    for m in data:
+        code = m["permalink"].rstrip("/").split("/")[-1]
+        thumb = m.get("thumbnail_url") or m.get("media_url")
+        if not thumb or not save_image(thumb, os.path.join(INSTA_IMG_DIR, f"{code}.jpg"), 720):
+            continue
+        items.append({
+            "code": code,
+            "url": m["permalink"] if m["permalink"].endswith("/") else m["permalink"] + "/",
+            "video": m["media_type"] == "VIDEO",
+            "date": m["timestamp"][:10],
+            "caption": (m.get("caption") or "").replace("\u200b", "").strip(),
+        })
+    return items
+
+
 def sync_instagram():
     os.makedirs(INSTA_IMG_DIR, exist_ok=True)
     path = os.path.join(DATA, "instagram.json")
+    token = os.environ.get("IG_TOKEN", "").strip()
+    if token:
+        try:
+            items = fetch_instagram_official(token)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(items, f, ensure_ascii=False, indent=1)
+            print(f"instagram(공식 API): {len(items)}개 게시물")
+            return
+        except Exception as e:
+            print("instagram 공식 API 실패, 공개 프로필로 시도:", str(e).split("access_token")[0], file=sys.stderr)
     try:
         raw = get(f"https://i.instagram.com/api/v1/users/web_profile_info/?username={INSTA_USER}",
                   {"x-ig-app-id": "936619743392459", "User-Agent": UA_MOBILE + " Instagram 300.0"})
