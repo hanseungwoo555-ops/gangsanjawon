@@ -105,37 +105,90 @@ def wrap_px(draw, text, font, width):
     return lines
 
 
+PAIR_RE = re.compile(r"images/cases/([A-Za-z0-9]+)-(?:before|after)\.jpg$")
+
+
+def case_pair(photo):
+    """사례 사진 경로면 (작업 전, 작업 후) 경로 쌍을 돌려준다."""
+    m = PAIR_RE.search(photo or "")
+    if not m:
+        return None
+    return case_photo(m.group(1), "before"), case_photo(m.group(1), "after")
+
+
+def paste_pair(im, pair, box):
+    """box 영역에 작업 전·후 사진을 나란히 붙이고 라벨을 단다."""
+    x0, y0, x1, y1 = box
+    half = (x1 - x0) // 2
+    d = ImageDraw.Draw(im)
+    fl = ImageFont.truetype(FONT_B, max(18, (y1 - y0) // 26))
+    for i, (src, label) in enumerate(zip(pair, ("작업 전", "작업 후"))):
+        ph = ImageOps.fit(Image.open(src).convert("RGB"), (half, y1 - y0), Image.LANCZOS)
+        im.paste(ph, (x0 + i * half, y0))
+        tw = d.textlength(label, font=fl)
+        bx, by = x0 + i * half + 16, y0 + 16
+        d.rounded_rectangle((bx, by, bx + tw + 24, by + fl.size + 16), radius=8, fill="#f6c945" if i else "#15211b")
+        d.text((bx + 12, by + 6), label, font=fl, fill="#1b1600" if i else "#ffffff")
+    d.rectangle((x0 + half - 3, y0, x0 + half + 3, y1), fill="#f6c945")
+
+
 def make_og(key, title, sub, photo):
-    """1200x630 공유 이미지. 네이버·카카오·구글 검색 썸네일에 쓰인다."""
+    """1200x630 공유 이미지. 사례 사진이면 작업 전·후를 나란히 넣는다. 네이버·카카오·구글 썸네일에 쓰인다."""
     out_rel = f"images/og/{key}.jpg"
     out = os.path.join(DIST, out_rel)
     os.makedirs(os.path.dirname(out), exist_ok=True)
-    W, H, PW = 1200, 630, 520
+    pair = case_pair(photo)
+    W, H = 1200, 630
+    PW = 660 if pair else 520
     im = Image.new("RGB", (W, H), "#1c5a3e")
-    if photo and os.path.exists(photo):
-        ph = ImageOps.fit(Image.open(photo).convert("RGB"), (PW, H), Image.LANCZOS)
-        im.paste(ph, (W - PW, 0))
+    if pair:
+        paste_pair(im, pair, (W - PW, 0, W, H))
+    elif photo and os.path.exists(photo):
+        im.paste(ImageOps.fit(Image.open(photo).convert("RGB"), (PW, H), Image.LANCZOS), (W - PW, 0))
     d = ImageDraw.Draw(im)
-    x, maxw = 64, W - PW - 64 - 48
-    d.text((x, 56), "강산자원", font=ImageFont.truetype(FONT_D, 40), fill="#f6c945")
-    d.text((x + 178, 70), "30년 경력 폐기물 처리", font=ImageFont.truetype(FONT_B, 22), fill="#cfe3d8")
+    x, maxw = 56, W - PW - 56 - 36
+    d.text((x, 52), "강산자원", font=ImageFont.truetype(FONT_D, 38), fill="#f6c945")
     title = title.replace("·", ", ")  # 제목 글꼴에 가운뎃점이 없다
-    size = 66
+    size = 60
     while True:
         ft = ImageFont.truetype(FONT_D, size)
         lines = [ln for part in title.split("\n") for ln in wrap_px(d, part, ft, maxw)]
-        if len(lines) <= 3 or size <= 44:
+        if len(lines) <= 3 or size <= 40:
             break
         size -= 4
-    y = 150
+    y = 132
     for ln in lines[:3]:
         d.text((x, y), ln, font=ft, fill="#ffffff"); y += int(size * 1.22)
-    fs = ImageFont.truetype(FONT_B, 26)
-    y += 14
+    fs = ImageFont.truetype(FONT_B, 24)
+    y += 12
     for ln in wrap_px(d, sub, fs, maxw)[:3]:
-        d.text((x, y), ln, font=fs, fill="#d9eadf"); y += 38
-    d.rounded_rectangle((x, H - 104, x + 330, H - 48), radius=28, fill="#f6c945")
-    d.text((x + 165, H - 76), "전화 010-6338-4016", font=ImageFont.truetype(FONT_B, 28), fill="#1b1600", anchor="mm")
+        d.text((x, y), ln, font=fs, fill="#d9eadf"); y += 36
+    d.text((x, H - 128), "30년 경력 · 사진 무료 견적", font=ImageFont.truetype(FONT_B, 22), fill="#cfe3d8")
+    d.rounded_rectangle((x, H - 92, x + 320, H - 40), radius=26, fill="#f6c945")
+    d.text((x + 160, H - 66), "전화 010-6338-4016", font=ImageFont.truetype(FONT_B, 26), fill="#1b1600", anchor="mm")
+    im.save(out, quality=86, optimize=True, progressive=True)
+    return out_rel
+
+
+def make_thumb(key, title, photo):
+    """정사각형 전후 썸네일(1000x1000). 검색 결과의 사진 카드용으로 본문 첫 사진과 og:image에 함께 쓴다."""
+    pair = case_pair(photo)
+    if not pair:
+        return None
+    out_rel = f"images/thumb/{key}.jpg"
+    out = os.path.join(DIST, out_rel)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    S, band = 1000, 150
+    im = Image.new("RGB", (S, S), "#1c5a3e")
+    paste_pair(im, pair, (0, 0, S, S - band))
+    d = ImageDraw.Draw(im)
+    t = title.replace("·", ", ")
+    size = 52
+    ft = ImageFont.truetype(FONT_D, size)
+    while d.textlength(t, font=ft) > S - 80 and size > 30:
+        size -= 4; ft = ImageFont.truetype(FONT_D, size)
+    d.text((40, S - band + 26), t, font=ft, fill="#ffffff")
+    d.text((40, S - 52), "강산자원 · 30년 경력 · 010-6338-4016", font=ImageFont.truetype(FONT_B, 26), fill="#f6c945")
     im.save(out, quality=86, optimize=True, progressive=True)
     return out_rel
 
@@ -199,12 +252,20 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
     og_key = "home" if path == "index.html" else re.sub(r"[^a-z0-9]+", "-", path.replace(".html", "").lower()).strip("-")
     og_rel = make_og(og_key, title if path != "index.html" else "버리기 힘든 짐,\n한 번에 비워드립니다",
                      og_sub or desc[:70], og_photo or DEFAULT_PHOTO)
-    PAGES.append((path, title, desc, [og_rel] + (images or []), indexable))
+    thumb_rel = None
+    if path.startswith(("services/", "items/", "cases/", "guide/")) and not path.endswith("index.html") or path == "index.html":
+        thumb_rel = make_thumb(og_key, title if path != "index.html" else "버리기 힘든 짐, 한 번에", og_photo or DEFAULT_PHOTO)
+    if thumb_rel and '<article class="prose">' in main and path != "index.html":
+        fig = (f'<figure class="lead-thumb"><img src="{rel(path, thumb_rel)}" alt="{e(title)} 작업 전후 사진 - 강산자원" width="1000" height="1000" decoding="async">'
+               f'<figcaption>{e(title)} 실제 작업 전과 후</figcaption></figure>')
+        main = main.replace('<article class="prose">', '<article class="prose">' + fig, 1)
+    PAGES.append((path, title, desc, [og_rel] + ([thumb_rel] if thumb_rel else []) + (images or []), indexable))
     crumbs = crumbs or []
     graph = [business_ld(), {
         "@type": "WebPage", "@id": url(path), "url": url(path), "name": full_title,
         "description": desc, "inLanguage": "ko-KR", "dateModified": TODAY,
         "primaryImageOfPage": {"@type": "ImageObject", "url": url(og_rel), "width": 1200, "height": 630},
+        "image": [url(og_rel)] + ([url(thumb_rel)] if thumb_rel else []),
         "isPartOf": {"@type": "WebSite", "name": "강산자원", "url": url("index.html")},
         "about": {"@id": url("index.html") + "#business"},
     }]
@@ -258,7 +319,8 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 <meta property="og:image" content="{url(og_rel)}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="{e(title)} - 강산자원">
+<meta property="og:image:alt" content="{e(title)} 작업 전후 - 강산자원">
+{f'<meta property="og:image" content="{url(thumb_rel)}"><meta property="og:image:width" content="1000"><meta property="og:image:height" content="1000">' if thumb_rel else ''}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{url(og_rel)}">
 <meta name="thumbnail" content="{url(og_rel)}">

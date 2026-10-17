@@ -341,3 +341,6 @@ th { color: var(--muted); font-weight: 700; white-space: nowrap; }
 .chips-lg a { display: block; padding: 8px 16px; font-weight: 600; text-decoration: none; color: var(--ink); }
 .chips-lg a:hover { color: var(--brand); }
 .video-thumb.is-playing { aspect-ratio: 9 / 16; }
+.lead-thumb { margin: 0 0 8px; display: grid; gap: 8px; }
+.lead-thumb img { width: 100%; max-width: 520px; border-radius: var(--radius); }
+.lead-thumb figcaption { font-size: .88rem; color: var(--muted); }
