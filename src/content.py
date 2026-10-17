@@ -12,8 +12,8 @@ ANALYTICS = {
 }
 
 VERIFY = {
-    "naver-site-verification": "",
-    "google-site-verification": "",
+    "naver-site-verification": "f292f92709e3d9cbedbff93f2931ae8c96daad00",
+    "google-site-verification": "8vqjHJG2bAPzJ9Zfl5iDZJKzrelQh9OVqh5aqzBas7c",
 }
 
 BIZ = {
