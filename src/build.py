@@ -177,9 +177,25 @@ def menu_groups():
     ]
 
 
+def fit(text, limit):
+    """네이버 권장 길이(제목 40자, 설명 80자)에 맞춘다. 문장·쉼표 단위로 자르고, 안 되면 단어 단위."""
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    for sep in (". ", ", ", " · ", " "):
+        i = cut.rfind(sep)
+        if i >= limit * 0.6:
+            return cut[:i].rstrip(" ,·") + ("." if sep == ". " else "")
+    return cut.rstrip()
+
+
 def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title=None,
          og_photo=None, og_sub=None, indexable=True, canonical=None, images=None):
-    full_title = head_title or f"{title} | 강산자원"
+    full_title = fit(head_title or f"{title} | 강산자원", 40)
+    if not full_title.endswith("강산자원") and not full_title.startswith("강산자원"):
+        full_title = fit(title, 40 - len(" | 강산자원")) + " | 강산자원"
+    desc = fit(desc, 80)
     og_key = "home" if path == "index.html" else re.sub(r"[^a-z0-9]+", "-", path.replace(".html", "").lower()).strip("-")
     og_rel = make_og(og_key, title if path != "index.html" else "버리기 힘든 짐,\n한 번에 비워드립니다",
                      og_sub or desc[:70], og_photo or DEFAULT_PHOTO)
@@ -596,8 +612,8 @@ def build_home():
   </div>
 </section>
 """
-    page(p, "강산자원", "서울·경기·인천 폐기물 처리·실내철거 30년 경력 강산자원. 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리·청소, 사무실·상가 원상복구, 실내철거. 대표 직접 출동, 사진 무료 견적 010-6338-4016.",
-         main, head_title="강산자원 | 30년 경력 폐기물 처리·쓰레기집 정리·실내철거 (서울·경기·인천)",
+    page(p, "강산자원", "서울·경기·인천 폐기물 처리 30년, 강산자원. 대형폐기물·이사짐·유품정리·쓰레기집 정리, 사진 무료 견적 010-6338-4016",
+         main, head_title="강산자원 | 30년 경력 폐기물 처리·쓰레기집 정리",
          ld=[faq_ld(C.GENERAL_FAQS[:8])], og_photo=case_photo("b275"), og_sub="서울·경기·인천 폐기물 처리 30년. 대표 직접 출동, 사진 무료 견적.",
          images=case_imgs(home_cases))
 
@@ -656,7 +672,7 @@ def build_services():
 {f'<section class="section band"><div class="wrap"><div class="section-head"><h2>관련 품목</h2></div>{link_cards(p, [(f"items/{i['slug']}.html", i["name"], i["sub"]) for i in rel_items])}</div></section>' if rel_items else ''}
 {f'<section class="section"><div class="wrap"><div class="section-head"><h2>함께 읽으면 좋은 글</h2></div>{link_cards(p, [(f"guide/{g['slug']}.html", g["title"], g["desc"]) for g in guides])}</div></section>' if guides else ''}
 """
-        desc = f"{s['short']} 서울·경기·인천 {s['keywords'][0]}, 30년 경력 강산자원. 대표 직접 출동, 사진 무료 견적 010-6338-4016."
+        desc = f"{s['name']}, 30년 경력 강산자원. {SVC_SUB[s['slug']]}. 서울·경기·인천 출동, 사진 무료 견적 010-6338-4016"
         ld = [{"@type": "Service", "name": s["name"], "serviceType": s["keywords"][0], "description": s["short"] + " " + " ".join(s["intro"]),
                "provider": {"@id": url("index.html") + "#business"},
                "areaServed": [{"@type": "AdministrativeArea", "name": n} for n in ("서울특별시", "경기도", "인천광역시")],
@@ -712,7 +728,7 @@ def build_items():
 </section>
 {f'''<section class="section band"><div class="wrap"><div class="section-head"><h2>관련 작업사례</h2></div><div class="cases">{"".join(case_card(p, c) for c in cs)}</div></div></section>''' if cs else ''}
 """
-        page(p, f"{it['name']} 수거", f"{it['name']} 버리기·수거: {it['sub']}. 서울·경기·인천 방문 수거, 분해·반출, 사진 무료 견적. 30년 경력 강산자원.",
+        page(p, f"{it['name']} 수거", f"{it['name']} 수거, 30년 경력 강산자원. {it['sub']}. 서울·경기·인천 방문 수거, 사진 무료 견적",
              main, head(f"{it['name']} 수거", it["sub"], "품목별 수거"),
              crumbs=[("items/index.html", "품목별 수거"), (p, it["name"])],
              ld=[{"@type": "Service", "name": f"{it['name']} 수거", "provider": {"@id": url("index.html") + "#business"}, "description": " ".join(it["intro"])}, faq_ld(it["faqs"])],
