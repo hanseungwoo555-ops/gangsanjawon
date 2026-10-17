@@ -22,6 +22,7 @@ SRC = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(os.path.dirname(SRC), "dist")
 DATA = os.path.join(SRC, "data")
 TODAY = date.today().isoformat()
+RFC_DATE = date.today().strftime("%a, %d %b %Y 00:00:00 +0900")
 B = C.BIZ
 e = html.escape
 
@@ -252,6 +253,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 <link rel="icon" href="{r("favicon.svg")}" type="image/svg+xml">
 <link rel="apple-touch-icon" href="{r("images/logo.png")}">
 <link rel="alternate" type="text/plain" title="LLM summary" href="{r("llms.txt")}">
+<link rel="alternate" type="application/rss+xml" title="강산자원" href="{r("rss.xml")}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
@@ -975,6 +977,13 @@ def build_text_files():
     sm.append("</urlset>")
     open(os.path.join(DIST, "sitemap.xml"), "w", encoding="utf-8").write("\n".join(sm) + "\n")
 
+    # 네이버 서치어드바이저 RSS 제출용: 서비스·품목·가이드·사례 분류 페이지
+    feed = [(pth, t, d) for pth, t, d, _, idx in PAGES if idx and pth.startswith(("services/", "items/", "guide/", "cases/")) and not pth.endswith("index.html")]
+    items = "".join(f"<item><title>{e(t)}</title><link>{url(pth)}</link><guid>{url(pth)}</guid><description>{e(d)}</description><pubDate>{RFC_DATE}</pubDate></item>" for pth, t, d in feed)
+    open(os.path.join(DIST, "rss.xml"), "w", encoding="utf-8").write(
+        f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>강산자원</title><link>{url("index.html")}</link>'
+        f'<description>30년 경력 폐기물 처리·쓰레기집 정리·실내철거 강산자원</description><language>ko</language>{items}</channel></rss>\n')
+
     facts = "\n".join(f"- {k}: {v}" for k, v in C.FACTS)
     links = lambda pre: "\n".join(f"- [{t}]({url(pth)}): {d}" for pth, t, d, _, idx in PAGES if pth.startswith(pre) and idx)
     llms = f"""# 강산자원
@@ -1040,6 +1049,10 @@ def copy_static():
     shutil.copytree(os.path.join(SRC, "assets"), os.path.join(DIST, "assets"))
     shutil.copytree(os.path.join(SRC, "images"), os.path.join(DIST, "images"))
     shutil.copy(os.path.join(SRC, "favicon.svg"), os.path.join(DIST, "favicon.svg"))
+    static = os.path.join(SRC, "static")  # 소유확인용 HTML 파일 등은 static/ 에 두면 사이트 맨 위에 그대로 올라간다
+    if os.path.isdir(static):
+        for name in (n for n in os.listdir(static) if not n.startswith(".")):
+            shutil.copy(os.path.join(static, name), os.path.join(DIST, name))
     # 블로그·인스타 이미지는 지금 목록에 있는 것만 복사
     os.makedirs(os.path.join(DIST, "images", "daily"), exist_ok=True)
     for x in BLOG:

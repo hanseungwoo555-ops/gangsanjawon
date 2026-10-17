@@ -4,6 +4,12 @@
 # 도메인이 정해지면 여기만 바꾸면 canonical, sitemap, 구조화 데이터가 모두 따라 바뀐다.
 SITE_URL = "https://hanseungwoo555-ops.github.io/gangsanjawon"
 
+# 검색엔진 소유확인 코드. 네이버 서치어드바이저·구글 서치콘솔에서 'HTML 태그' 방식으로 받은 content 값을 넣는다.
+VERIFY = {
+    "naver-site-verification": "",
+    "google-site-verification": "",
+}
+
 BIZ = {
     "name": "강산자원",
     "name_en": "Gangsan Jawon",
