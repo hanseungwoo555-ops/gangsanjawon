@@ -491,6 +491,21 @@ def build_home():
 
 <section class="section">
   <div class="wrap">
+    <div class="section-head"><span class="eyebrow">Before &amp; After</span><h2>작업 전과 후</h2>
+      <p>강산자원이 직접 작업한 현장 사진입니다. 전후 사진 {len(CASES)}건은 <a href="cases/index.html">작업사례</a>에서 보실 수 있습니다.</p></div>
+    <div class="cases">{cases}</div>
+  </div>
+</section>
+
+{f'''<section class="section band">
+  <div class="wrap">
+    <div class="section-head"><span class="eyebrow">Videos</span><h2>현장 영상</h2><p>인스타그램에 올린 작업 영상입니다. <a href="videos.html">영상 더 보기</a></p></div>
+    <div class="videos">{videos}</div>
+  </div>
+</section>''' if videos else ''}
+
+<section class="section">
+  <div class="wrap">
     <div class="section-head"><span class="eyebrow">About</span><h2>강산자원은 이런 업체입니다</h2>
       <p>서울 은평구 증산동에 본사를 둔 폐기물 처리·실내철거 전문업체입니다. 가정, 사무실, 상가, 공장과 창고에서 나오는 폐기물을 수거하고, 쓰레기집 정리부터 철거와 원상복구까지 한 팀이 진행합니다.</p></div>
     {sheet(C.FACTS)}
@@ -511,21 +526,6 @@ def build_home():
     <ul class="chips chips-lg">{item_chips}</ul>
   </div>
 </section>
-
-<section class="section band">
-  <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Before &amp; After</span><h2>작업 전과 후</h2>
-      <p>강산자원이 직접 작업한 현장 사진입니다. 전후 사진 {len(CASES)}건은 <a href="cases/index.html">작업사례</a>에서 보실 수 있습니다.</p></div>
-    <div class="cases">{cases}</div>
-  </div>
-</section>
-
-{f'''<section class="section">
-  <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Videos</span><h2>현장 영상</h2><p>인스타그램에 올린 작업 영상입니다. <a href="videos.html">영상 더 보기</a></p></div>
-    <div class="videos">{videos}</div>
-  </div>
-</section>''' if videos else ''}
 
 <section class="section band">
   <div class="wrap">
