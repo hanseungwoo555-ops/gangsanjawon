@@ -474,7 +474,7 @@ def case_card(path, c, lazy=True):
     <figure>{img(path, f"images/cases/{c['id']}-before.jpg", c['title'] + ' 작업 전 모습', lazy=lazy)}<figcaption>작업 전</figcaption></figure>
     <figure>{img(path, f"images/cases/{c['id']}-after.jpg", c['title'] + ' 작업 후 모습', lazy=lazy)}<figcaption>작업 후</figcaption></figure>
   </div>
-  <span class="tag"><a href="{rel(path, 'cases/' + c['cat'] + '.html')}">{e(CAT_NAME[c['cat']])}</a> · <a href="{rel(path, 'services/' + s['slug'] + '.html')}">{e(s['name'])}</a></span>
+  <span class="tag"><a href="{rel(path, 'cases/' + c['cat'] + '.html')}">{e(CAT_NAME[c['cat']])}</a>{'' if CAT_NAME[c['cat']] == s['name'] else f""" · <a href="{rel(path, 'services/' + s['slug'] + '.html')}">{e(s['name'])}</a>"""}</span>
   <h3>{e(c['title'])}</h3>
   <p>{e(c['desc'])}</p>
 </article>"""

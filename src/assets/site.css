@@ -362,3 +362,6 @@ th { color: var(--muted); font-weight: 700; white-space: nowrap; }
 .mega-grid.compact a { padding: 6px 10px; }
 .mega-grid.compact a b { font-size: .9rem; font-weight: 600; }
 .mega { max-height: calc(100vh - 80px); overflow-y: auto; }
+
+/* 숨김 처리한 요소는 디자인 규칙과 상관없이 감춘다 (작업사례 분류 버튼 등) */
+[hidden] { display: none !important; }
