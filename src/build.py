@@ -755,7 +755,7 @@ def build_services():
 def build_items():
     p = "items/index.html"
     page(p, "품목별 수거", "장롱, 침대·매트리스, 소파, 냉장고, 에어컨, 세탁기, 피아노, 운동기구, 사무용 가구, 파티션, 화분, 파렛트 등 품목별 수거 방법과 주의할 점.",
-         f'<section class="section"><div class="wrap">{link_cards(p, [(i["slug"] + ".html", i["name"], i["sub"]) for i in ITEMS])}</div></section>',
+         f'<section class="section"><div class="wrap">{link_cards(p, [("items/" + i["slug"] + ".html", i["name"], i["sub"]) for i in ITEMS])}</div></section>',
          head("품목별 수거", "버리실 물건을 고르면 옮기는 방법과 주의할 점, 비슷한 작업사례를 보실 수 있습니다."),
          crumbs=[(p, "품목별 수거")], og_sub="장롱·침대·냉장고·에어컨·피아노 등 품목별 안내")
     for it in ITEMS:
@@ -804,7 +804,7 @@ def build_items():
 # ---------------------------------------------------------------- 작업사례
 def build_cases():
     p = "cases/index.html"
-    cat_links = [(f"{k}.html", f"{n} ({sum(1 for c in CASES if c['cat'] == k)}건)", d) for k, n, d in CATS]
+    cat_links = [(f"cases/{k}.html", f"{n} ({sum(1 for c in CASES if c['cat'] == k)}건)", d) for k, n, d in CATS]
     filters = '<button type="button" data-filter="all" aria-pressed="true">전체</button>' + "".join(
         f'<button type="button" data-filter="{k}" aria-pressed="false">{e(n)}</button>' for k, n, _ in CATS)
     cards = "".join(case_card(p, c, lazy=i > 3) for i, c in enumerate(CASES))
@@ -981,7 +981,7 @@ def build_about():
 def build_areas():
     p = "areas/index.html"
     page(p, "출동지역", "강산자원은 서울 25개 구, 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다. 본사 서울 은평구 증산동, 수도권 당일 출동 가능.",
-         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>강산자원 본사는 서울 은평구 증산로5길 14(증산역 인근)에 있습니다. 서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [(k + ".html", a["full"] + " 폐기물 처리", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
+         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>강산자원 본사는 서울 은평구 증산로5길 14(증산역 인근)에 있습니다. 서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [("areas/" + k + ".html", a["full"] + " 폐기물 처리", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
          head("출동지역", "서울·경기·인천 수도권 전 지역으로 출동합니다."), crumbs=[(p, "출동지역")], og_sub="서울 25개 구 · 경기 · 인천 전 지역")
     for k, a in C.AREAS.items():
         p = f"areas/{k}.html"
@@ -1005,7 +1005,7 @@ def build_areas():
 def build_guides():
     p = "guide/index.html"
     page(p, "폐기물 처리 가이드", "대형폐기물 버리는 법, 매트리스·폐가전 처리, 이사 폐기물 체크리스트, 쓰레기집 정리, 상가 원상복구, 유품정리 순서 등 30년 경력 강산자원이 정리한 안내.",
-         f'<section class="section"><div class="wrap">{link_cards(p, [(g["slug"] + ".html", g["title"], g["desc"]) for g in GUIDES])}</div></section>',
+         f'<section class="section"><div class="wrap">{link_cards(p, [("guide/" + g["slug"] + ".html", g["title"], g["desc"]) for g in GUIDES])}</div></section>',
          head("폐기물 처리 가이드", "30년 동안 현장에서 가장 많이 받은 질문을 정리했습니다."), crumbs=[(p, "폐기물 가이드")], og_sub="현장 경험으로 쓴 폐기물 처리 안내")
     for g in GUIDES:
         p = f"guide/{g['slug']}.html"
@@ -1081,7 +1081,7 @@ def build_columns(topic_kws):
     blocks = ""
     for g, gname in CL.CD.GROUPS:
         ts = [t for t in CL.TOPIC.values() if t["group"] == g]
-        blocks += f'<h2 style="margin-top:32px">{e(gname)}</h2>' + link_cards(p, [(t["slug"] + ".html", t["title"], t["lead"]) for t in ts])
+        blocks += f'<h2 style="margin-top:32px">{e(gname)}</h2>' + link_cards(p, [("column/" + t["slug"] + ".html", t["title"], t["lead"]) for t in ts])
     total = sum(len(v) for v in topic_kws.values())
     page(p, "폐기물 칼럼", f"매트리스·장롱·냉장고 버리는 법부터 철거, 폐업 정리, 쓰레기집, 폐기물 비용까지 {len(CL.TOPIC)}개 주제 칼럼. 30년 경력 강산자원.",
          f'<section class="section"><div class="wrap"><div class="prose"><p>현장에서 가장 많이 받는 질문 {total}가지를 주제별로 정리했습니다.</p></div>{blocks}</div></section>',
@@ -1160,7 +1160,7 @@ def build_locals(region_kws):
     blocks = ""
     for area in ("서울", "경기", "인천"):
         rs = [r for r in CL.REGION.values() if r["area"] == area]
-        blocks += f'<h2 style="margin-top:32px">{area}</h2>' + link_cards(p, [(r["slug"] + ".html", local_title(r, region_kws[r["slug"]]), ", ".join(r["dongs"][:6])) for r in rs])
+        blocks += f'<h2 style="margin-top:32px">{area}</h2>' + link_cards(p, [("local/" + r["slug"] + ".html", local_title(r, region_kws[r["slug"]]), ", ".join(r["dongs"][:6])) for r in rs])
     page(p, "지역별 폐기물·철거 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역별 대형폐기물 수거, 폐기물 처리, 철거 안내. 강산자원 본사 은평구 증산동.",
          f'<section class="section"><div class="wrap"><div class="prose"><p>지역마다 건물 유형과 동네 사정이 달라 작업 방식도 달라집니다. 동네를 고르면 그 지역 작업 안내와 실제 작업 사진을 보실 수 있습니다.</p></div>{blocks}</div></section>',
          head("지역별 폐기물·철거 안내", "서울·경기·인천 동네별 안내입니다."), crumbs=[(p, "지역별 안내")], og_sub="서울·경기·인천 지역별 안내")
