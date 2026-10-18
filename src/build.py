@@ -15,6 +15,7 @@ from datetime import date
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
+import columns as CL
 import content as C
 import content_more as M
 
@@ -214,19 +215,22 @@ def btn_kakao(label="카톡으로 사진 견적"):
 
 
 def menu_groups():
-    """메가메뉴 구성: (제목, 대표 링크, [(링크, 이름, 설명)])"""
+    """메가메뉴 구성: (제목, 대표 링크, [(링크, 이름, 설명)], 촘촘하게 여부)"""
+    col = [(f"column/{t['slug']}.html", t["title"], "") for t in CL.TOPIC.values()]
+    loc = [(f"local/{r['slug']}.html", r["name"], "") for r in CL.REGION.values()]
     return [
-        ("서비스", "services/index.html", [(f"services/{s['slug']}.html", s["name"], SVC_SUB[s["slug"]]) for s in SERVICES]),
-        ("품목별 수거", "items/index.html", [(f"items/{i['slug']}.html", i["name"], i["sub"]) for i in ITEMS]),
+        ("서비스", "services/index.html", [(f"services/{s['slug']}.html", s["name"], SVC_SUB[s["slug"]]) for s in SERVICES], False),
+        ("품목별 수거", "items/index.html", [(f"items/{i['slug']}.html", i["name"], i["sub"]) for i in ITEMS], False),
         ("작업사례", "cases/index.html", [("cases/index.html", "전체 사례", f"전후 사진 {len(CASES)}건")] +
-         [(f"cases/{k}.html", n, f"{sum(1 for c in CASES if c['cat'] == k)}건") for k, n, _ in CATS]),
-        ("강산 일상", "daily/index.html", []),
-        ("영상", "videos.html", []),
+         [(f"cases/{k}.html", n, f"{sum(1 for c in CASES if c['cat'] == k)}건") for k, n, _ in CATS], False),
+        ("폐기물 칼럼", "column/index.html", col, True),
+        ("지역별 안내", "local/index.html", loc, True),
+        ("소식", "daily/index.html", [("daily/index.html", "강산 일상", "블로그 현장 이야기"), ("videos.html", "현장 영상", "인스타그램 릴스")], False),
         ("이용안내", "estimate.html", [("estimate.html", "무료견적·작업 절차", "사진으로 받는 무료 견적"), ("areas/index.html", "출동지역", "서울·경기·인천 전 지역"),
                                     ("guide/index.html", "폐기물 처리 가이드", f"현장 경험으로 쓴 안내 {len(GUIDES)}편"), ("faq.html", "자주 묻는 질문", "견적·일정·작업 범위"),
-                                    ("reviews.html", "고객 후기", "당근·플레이스 후기")]),
+                                    ("reviews.html", "고객 후기", "당근·플레이스 후기")], False),
         ("회사소개", "about.html", [("about.html", "강산자원 소개", "30년 경력, 대표 직접 출동"), ("about.html#vehicles", "보유 차량", "1톤 트럭·집게차·사다리차"),
-                                 ("contact.html", "연락처·오시는 길", "은평구 증산동 본사")]),
+                                 ("contact.html", "연락처·오시는 길", "은평구 증산동 본사")], False),
     ]
 
 
@@ -253,9 +257,9 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
     og_rel = make_og(og_key, title if path != "index.html" else "버리기 힘든 짐,\n한 번에 비워드립니다",
                      og_sub or desc[:70], og_photo or DEFAULT_PHOTO)
     thumb_rel = None
-    if path.startswith(("services/", "items/", "cases/", "guide/")) and not path.endswith("index.html") or path == "index.html":
+    if path.startswith(("services/", "items/", "cases/", "guide/", "column/", "local/")) and not path.endswith("index.html") or path == "index.html":
         thumb_rel = make_thumb(og_key, title if path != "index.html" else "버리기 힘든 짐, 한 번에", og_photo or DEFAULT_PHOTO)
-    if thumb_rel and '<article class="prose">' in main and path != "index.html":
+    if thumb_rel and '<article class="prose">' in main and path != "index.html" and "pair-gallery" not in main:
         fig = (f'<figure class="lead-thumb"><img src="{rel(path, thumb_rel)}" alt="{e(title)} 작업 전후 사진 - 강산자원" width="1000" height="1000" decoding="async">'
                f'<figcaption>{e(title)} 실제 작업 전과 후</figcaption></figure>')
         main = main.replace('<article class="prose">', '<article class="prose">' + fig, 1)
@@ -277,15 +281,15 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
     top = path.split("/")[0] if "/" in path else path
 
     nav_items = []
-    for gname, glink, links in menu_groups():
+    for gname, glink, links, compact in menu_groups():
         cur = ' aria-current="page"' if (glink.split("/")[0] == top or any(l.split("#")[0] == path for l, _, _ in links)) else ""
         if links:
-            panel = "".join(f'<a href="{r(l)}"><b>{e(n)}</b><span>{e(s)}</span></a>' for l, n, s in links)
-            nav_items.append(f'<li class="has-mega"><a href="{r(glink)}"{cur}>{e(gname)}</a><div class="mega"><div class="mega-inner"><p class="mega-title">{e(gname)}</p><div class="mega-grid">{panel}</div></div></div></li>')
+            panel = "".join(f'<a href="{r(l)}"><b>{e(n)}</b>' + (f'<span>{e(s)}</span>' if s else "") + "</a>" for l, n, s in links)
+            nav_items.append(f'<li class="has-mega"><a href="{r(glink)}"{cur}>{e(gname)}</a><div class="mega"><div class="mega-inner"><p class="mega-title">{e(gname)}</p><div class="mega-grid{" compact" if compact else ""}">{panel}</div></div></div></li>')
         else:
             nav_items.append(f'<li><a href="{r(glink)}"{cur}>{e(gname)}</a></li>')
     mob = [f'<a href="{r("index.html")}">홈</a>']
-    for gname, glink, links in menu_groups():
+    for gname, glink, links, _ in menu_groups():
         if links:
             mob.append(f'<details><summary>{e(gname)}</summary><div>' + "".join(f'<a href="{r(l)}">{e(n)}</a>' for l, n, _ in links) + "</div></details>")
         else:
@@ -1020,6 +1024,216 @@ def build_guides():
              og_photo=case_photo(cs[0]["id"], "before") if cs else None, og_sub="강산자원 폐기물 처리 가이드")
 
 
+# ---------------------------------------------------------------- 전후 사진 묶음 (칼럼 갤러리, 검색 이미지용)
+def make_pair_images():
+    """사례마다 작업 전·후를 나란히 붙인 정사각형 사진(900x900)을 만든다."""
+    out_dir = os.path.join(DIST, "images", "pair")
+    os.makedirs(out_dir, exist_ok=True)
+    for c in CASES:
+        im = Image.new("RGB", (900, 900), "#1c5a3e")
+        paste_pair(im, (case_photo(c["id"], "before"), case_photo(c["id"], "after")), (0, 0, 900, 900))
+        im.save(os.path.join(out_dir, f"{c['id']}.jpg"), quality=84, optimize=True, progressive=True)
+
+
+def pick_cases(cats, seed, n=6, prefer=(), words=()):
+    """주제·지역에 맞는 사례를 고른다. 주제어가 들어간 사례를 먼저, 그다음 분류가 맞는 사례를
+    페이지마다 시작 위치를 달리해 고르므로 같은 사진이 반복되지 않는다."""
+    k0 = int.from_bytes(seed.encode("utf-8"), "little")
+    out = [CASE[i] for i in prefer if i in CASE]
+    if words:
+        hit = [c for c in CASES if c not in out and any(w in c["title"] + c["desc"] for w in words)]
+        out += hit[k0 % max(1, len(hit)):] + hit[:k0 % max(1, len(hit))]
+    if cats:
+        pool = [c for c in CASES if c["cat"] in cats and c not in out]
+        k = k0 % max(1, len(pool))
+        out += pool[k:] + pool[:k]
+    else:  # 지역 페이지: 분류를 섞어서 한 장씩
+        order = ["household", "moving", "trash", "office", "estate", "demolition", "store", "outdoor"]
+        by = {c: [x for x in CASES if x["cat"] == c and x not in out] for c in order}
+        i = 0
+        while len(out) < n and any(by.values()):
+            c = order[(i + k0) % len(order)]
+            if by[c]:
+                lst = by[c]
+                out.append(lst.pop(k0 % len(lst)))
+            i += 1
+    if len(out) < n:
+        out += [c for c in CASES if c not in out]
+    return out[:n]
+
+
+def pair_gallery(path, cases, place):
+    figs = "".join(
+        f'<figure><a href="{rel(path, "cases/" + c["cat"] + ".html")}"><img src="{rel(path, "images/pair/" + c["id"] + ".jpg")}" '
+        f'alt="{e(place)} {e(c["title"])} 작업 전후 사진" width="900" height="900" decoding="async"></a>'
+        f'<figcaption>{e(c["title"])}</figcaption></figure>' for c in cases)
+    return f'<div class="pair-gallery">{figs}</div>'
+
+
+def kw_index(groups, label_of):
+    chips = "".join(f'<li><a href="#k{i + 1}">{e(label_of(g))}</a></li>' for i, g in enumerate(groups))
+    return f'<nav class="kw-index" aria-label="이 페이지의 주제"><ul class="chips">{chips}</ul></nav>'
+
+
+# ---------------------------------------------------------------- 폐기물 칼럼 (주제별)
+def build_columns(topic_kws):
+    p = "column/index.html"
+    blocks = ""
+    for g, gname in CL.CD.GROUPS:
+        ts = [t for t in CL.TOPIC.values() if t["group"] == g]
+        blocks += f'<h2 style="margin-top:32px">{e(gname)}</h2>' + link_cards(p, [(t["slug"] + ".html", t["title"], t["lead"]) for t in ts])
+    total = sum(len(v) for v in topic_kws.values())
+    page(p, "폐기물 칼럼", f"매트리스·장롱·냉장고 버리는 법부터 철거, 폐업 정리, 쓰레기집, 폐기물 비용까지 {len(CL.TOPIC)}개 주제 칼럼. 30년 경력 강산자원.",
+         f'<section class="section"><div class="wrap"><div class="prose"><p>현장에서 가장 많이 받는 질문 {total}가지를 주제별로 정리했습니다.</p></div>{blocks}</div></section>',
+         head("폐기물 칼럼", "버리는 법, 철거, 폐업 정리, 비용까지 주제별로 정리했습니다."), crumbs=[(p, "폐기물 칼럼")],
+         og_sub="버리는 법·철거·폐업·비용 주제별 안내")
+    for t in CL.TOPIC.values():
+        p = f"column/{t['slug']}.html"
+        kws = topic_kws.get(t["slug"], [])
+        groups = CL.topic_groups(t, kws)
+        words = [w for slug, subs in CL.CD.RULES if slug == t["slug"] for w in subs]
+        cs = pick_cases(t["cats"], t["slug"], 6, words=words)
+        counts = {}
+        secs = ""
+        for i, g in enumerate(groups):
+            kind = CL.split_kw(g[0], t["noun"])[1]
+            n = counts.get(kind, 0); counts[kind] = n + 1
+            h, txt = CL.topic_section(t, g[0], n)
+            secs += f'<section class="kw-sec" id="k{i + 1}"><h3>{e(h)}</h3><p>{e(txt)}</p></section>'
+        pts = "".join(f"<li>{e(x)}</li>" for x in t["points"])
+        svc = SVC[t["service"]]
+        related = [x for x in CL.TOPIC.values() if x["group"] == t["group"] and x is not t][:6]
+        summary = f"{t['lead']} 강산자원은 서울·경기·인천에서 {t['noun']} 작업을 직접 하며, 사진을 보내주시면 무료로 견적을 드립니다."
+        main = f"""
+<section class="section">
+  <div class="wrap">
+    <p class="note" style="margin-bottom:20px"><strong>요약</strong> {e(summary)}</p>
+    <h2 class="gallery-title">{e(t['noun'])} 현장 작업 전후</h2>
+    {pair_gallery(p, cs, t['noun'])}
+  </div>
+</section>
+<section class="section band">
+  <div class="wrap split">
+    <article class="prose">
+      {"".join(f"<p>{e(x)}</p>" for x in t['intro'])}
+      <h2>이 글에서 다루는 내용</h2>
+      {kw_index(groups, lambda g: CL.topic_section(t, g[0])[0])}
+      <h2>{e(t['noun'])} 자주 찾는 질문별 안내</h2>
+      {secs}
+      <h2>강산자원은 이렇게 처리합니다</h2>
+      <ul class="checklist">{pts}</ul>
+      <h2>직접 버릴 때 알아둘 점</h2>
+      <p>{e(t['gov'])}</p>
+      <h2>비용이 정해지는 기준</h2>
+      <p>{e(t['cost'])} <a href="../estimate.html">사진 견적 받는 법</a>을 참고해 주세요.</p>
+      <h2>작업 전 확인하세요</h2>
+      <p>{e(t['care'])}</p>
+      <h2>자주 묻는 질문</h2>
+      {faq_html(t['faqs'], open_first=True)}
+      <p>관련 서비스: <a href="../services/{svc['slug']}.html">{e(svc['name'])}</a></p>
+    </article>
+    <aside class="aside">{cta_card()}<div class="note"><strong>같은 분류 칼럼</strong><ul>{"".join(f'<li><a href="{x["slug"]}.html">{e(x["title"])}</a></li>' for x in related)}</ul></div></aside>
+  </div>
+</section>"""
+        imgs = [f"images/pair/{c['id']}.jpg" for c in cs] + case_imgs(cs)
+        ld = [{"@type": "Article", "headline": t["title"], "description": t["lead"], "inLanguage": "ko-KR",
+               "keywords": ", ".join(kws), "image": [url(x) for x in imgs[:6]],
+               "author": {"@id": url("index.html") + "#business"}, "publisher": {"@id": url("index.html") + "#business"},
+               "dateModified": TODAY, "mainEntityOfPage": url(p)}, faq_ld(t["faqs"])]
+        page(p, t["title"], f"{t['lead']} 30년 경력 강산자원, 사진 무료 견적.", main,
+             head(t["title"], t["lead"], dict(CL.CD.GROUPS)[t["group"]]),
+             crumbs=[("column/index.html", "폐기물 칼럼"), (p, t["title"])], ld=ld,
+             og_photo=case_photo(cs[0]["id"]), og_sub=t["lead"][:60], images=imgs)
+
+
+# ---------------------------------------------------------------- 지역별 안내
+def local_title(r, items):
+    rests = {it["rest"] for it in items}
+    tail = "대형폐기물·폐기물 처리"
+    if any("철거" in x for x in rests):
+        tail = "대형폐기물·폐기물·철거"
+    return f"{r['name']} {tail}"
+
+
+def build_locals(region_kws):
+    p = "local/index.html"
+    blocks = ""
+    for area in ("서울", "경기", "인천"):
+        rs = [r for r in CL.REGION.values() if r["area"] == area]
+        blocks += f'<h2 style="margin-top:32px">{area}</h2>' + link_cards(p, [(r["slug"] + ".html", local_title(r, region_kws[r["slug"]]), ", ".join(r["dongs"][:6])) for r in rs])
+    page(p, "지역별 폐기물·철거 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역별 대형폐기물 수거, 폐기물 처리, 철거 안내. 강산자원 본사 은평구 증산동.",
+         f'<section class="section"><div class="wrap"><div class="prose"><p>지역마다 건물 유형과 동네 사정이 달라 작업 방식도 달라집니다. 동네를 고르면 그 지역 작업 안내와 실제 작업 사진을 보실 수 있습니다.</p></div>{blocks}</div></section>',
+         head("지역별 폐기물·철거 안내", "서울·경기·인천 동네별 안내입니다."), crumbs=[(p, "지역별 안내")], og_sub="서울·경기·인천 지역별 안내")
+    slugs = list(CL.REGION)
+    for ri, r in enumerate(CL.REGION.values()):
+        p = f"local/{r['slug']}.html"
+        items = region_kws[r["slug"]]
+        groups = CL.region_groups(items)
+        prefer = [cid for cid, rs in M.CASE_REGION.items() if rs == r["slug"]]
+        cs = pick_cases(None, r["slug"] + "x", 6, prefer)
+        counts = {}
+        secs = ""
+        for i, g in enumerate(groups):
+            kind = CL.RTYPE.get(g[0]["rest"], "general")
+            n = counts.get(kind, 0); counts[kind] = n + 1
+            h, txt = CL.region_section(r, g[0], n)
+            kws = " · ".join(x["kw"] for x in g)
+            secs += f'<section class="kw-sec" id="k{i + 1}"><h3>{e(h)}</h3><p>{e(txt)}</p><p class="kw-tags">{e(kws)}</p></section>'
+        title = local_title(r, items)
+        faqs = CL.region_faqs(r)
+        near = [CL.REGION[slugs[(ri + d) % len(slugs)]] for d in (-2, -1, 1, 2)]
+        near = [x for x in near if x["area"] == r["area"] and x is not r] or near
+        dong_chips = "".join(f"<li>{e(d)}</li>" for d in r["dongs"])
+        regional_cases = [c for c in cs if c["id"] in prefer]
+        summary = f"강산자원은 {r['name']} 전 지역에서 대형폐기물 수거, 폐가구·폐가전 수거, 이사 폐기물, 쓰레기집 정리, 철거와 원상복구를 합니다. {CL.LD.NEAR_TEXT[r['near']]}"
+        main = f"""
+<section class="section">
+  <div class="wrap">
+    <p class="note" style="margin-bottom:20px"><strong>요약</strong> {e(summary)}</p>
+    <h2 class="gallery-title">{e(r['name'])} 고객님이 맡기신 작업과 같은 현장 사진</h2>
+    {pair_gallery(p, cs, r['name'])}
+    {f'<p class="muted" style="margin-top:8px">앞의 {len(regional_cases)}장은 {e(r["name"])}에서 실제로 작업한 현장입니다.</p>' if regional_cases else ''}
+  </div>
+</section>
+<section class="section band">
+  <div class="wrap split">
+    <article class="prose">
+      <h2>{e(r['name'])} 작업 특징</h2>
+      <p>{e(r['trait'])}</p>
+      <p>{e(CL.LD.NEAR_TEXT[r['near']])}</p>
+      <h3>출동하는 동네</h3>
+      <ul class="chips">{dong_chips}</ul>
+      <h2>이 페이지에서 다루는 내용</h2>
+      {kw_index(groups, lambda g: CL.region_section(r, g[0], 0)[0])}
+      <h2>{e(r['name'])} 폐기물·철거 안내</h2>
+      {secs}
+      <h2>구청 신고 배출과 방문 수거 비교</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col"></th><th scope="col">{e(CL.office(r))} 신고 배출</th><th scope="col">강산자원 방문 수거</th></tr></thead><tbody>
+        <tr><th scope="row">신고·스티커</th><td>직접 신고, 수수료 납부</td><td>필요 없음</td></tr>
+        <tr><th scope="row">집 밖 운반</th><td>직접</td><td>직원이 집 안에서 반출</td></tr>
+        <tr><th scope="row">분해·철거</th><td>직접</td><td>현장에서 진행</td></tr>
+        <tr><th scope="row">비용</th><td>품목별 수수료</td><td>사진 보고 무료 견적</td></tr>
+      </tbody></table></div>
+      <h2>{e(r['name'])} 자주 묻는 질문</h2>
+      {faq_html(faqs, open_first=True)}
+      <h2>가까운 지역</h2>
+      <ul>{"".join(f'<li><a href="{x["slug"]}.html">{e(x["name"])} 폐기물·철거 안내</a></li>' for x in near)}</ul>
+    </article>
+    <aside class="aside">{cta_card()}</aside>
+  </div>
+</section>"""
+        imgs = [f"images/pair/{c['id']}.jpg" for c in cs] + case_imgs(cs)
+        all_kws = [it["kw"] for it in items]
+        ld = [{"@type": "Service", "name": title, "serviceType": "폐기물 수집·운반, 대형폐기물 수거, 철거",
+               "provider": {"@id": url("index.html") + "#business"},
+               "areaServed": {"@type": "AdministrativeArea", "name": r["name"], "containsPlace": [{"@type": "Place", "name": d} for d in r["dongs"]]},
+               "keywords": ", ".join(all_kws), "image": [url(x) for x in imgs[:6]]}, faq_ld(faqs)]
+        page(p, title, f"{r['name']} 대형폐기물·폐가구·폐가전 수거, 폐기물 처리, 철거. {', '.join(r['dongs'][:3])} 등 출동, 30년 경력 강산자원 무료 견적.",
+             main, head(title, f"{', '.join(r['dongs'][:5])} 등 {r['name']} 전 지역 출동", "지역별 안내"),
+             crumbs=[("local/index.html", "지역별 안내"), (p, r["name"])], ld=ld,
+             og_photo=case_photo(cs[0]["id"]), og_sub=f"{r['name']} 전 지역 출동 · 사진 무료 견적", images=imgs)
+
+
 def build_misc():
     p = "faq.html"
     all_faqs = list(C.GENERAL_FAQS)
@@ -1063,14 +1277,14 @@ def build_text_files():
     for path, _, _, imgs, idx in PAGES:
         if not idx:
             continue
-        pr = "1.0" if path == "index.html" else "0.8" if path.startswith(("services/", "items/", "cases/", "estimate")) else "0.6"
+        pr = "1.0" if path == "index.html" else "0.8" if path.startswith(("services/", "items/", "cases/", "estimate", "local/", "column/")) else "0.6"
         im = "".join(f"<image:image><image:loc>{url(i)}</image:loc></image:image>" for i in imgs[:50])
         sm.append(f"  <url><loc>{url(path)}</loc><lastmod>{TODAY}</lastmod><priority>{pr}</priority>{im}</url>")
     sm.append("</urlset>")
     open(os.path.join(DIST, "sitemap.xml"), "w", encoding="utf-8").write("\n".join(sm) + "\n")
 
     # 네이버 서치어드바이저 RSS 제출용: 서비스·품목·가이드·사례 분류 페이지
-    feed = [(pth, t, d) for pth, t, d, _, idx in PAGES if idx and pth.startswith(("services/", "items/", "guide/", "cases/")) and not pth.endswith("index.html")]
+    feed = [(pth, t, d) for pth, t, d, _, idx in PAGES if idx and pth.startswith(("services/", "items/", "guide/", "cases/", "column/", "local/")) and not pth.endswith("index.html")]
     items = "".join(f"<item><title>{e(t)}</title><link>{url(pth)}</link><guid>{url(pth)}</guid><description>{e(d)}</description><pubDate>{RFC_DATE}</pubDate></item>" for pth, t, d in feed)
     open(os.path.join(DIST, "rss.xml"), "w", encoding="utf-8").write(
         f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>강산자원</title><link>{url("index.html")}</link>'
@@ -1105,6 +1319,12 @@ def build_text_files():
 
 ## 출동 지역
 {links("areas/")}
+
+## 지역별 폐기물·철거 안내
+{links("local/")}
+
+## 폐기물 칼럼
+{links("column/")}
 
 ## 폐기물 처리 가이드
 {links("guide/")}
@@ -1177,6 +1397,8 @@ if __name__ == "__main__":
         shutil.rmtree(DIST)
     os.makedirs(DIST)
     copy_static()
+    make_pair_images()
+    REGION_KWS, TOPIC_KWS = CL.assign()
     build_home()
     build_services()
     build_items()
@@ -1188,6 +1410,8 @@ if __name__ == "__main__":
     build_areas()
     build_guides()
     build_misc()
+    build_columns(TOPIC_KWS)
+    build_locals(REGION_KWS)
     build_text_files()
     n_idx = sum(1 for p in PAGES if p[4])
     print(f"{len(PAGES)} pages ({n_idx} indexable, {len(CASES)} cases, {len(BLOG)} blog posts, {len(INSTA)} instagram) -> {DIST}")
