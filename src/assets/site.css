@@ -403,3 +403,12 @@ th { color: var(--muted); font-weight: 700; white-space: nowrap; }
 .split > * { min-width: 0; }
 .prose { grid-template-columns: minmax(0, 1fr); }
 .qa-sec { display: grid; gap: 1em; min-width: 0; }
+/* 홈: 하위 페이지로 가는 정사각형 이미지 카드 */
+.feats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 20px; }
+.feat { display: grid; gap: 8px; align-content: start; }
+.feat img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius); background: var(--line); }
+.feat h3 { font-size: 1rem; line-height: 1.4; margin: 0; }
+.feat h3 a { color: inherit; text-decoration: none; }
+.feat h3 a:hover { text-decoration: underline; }
+.feat p { font-size: .88rem; color: var(--muted); margin: 0; }
+@media (max-width: 480px) { .feats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } }

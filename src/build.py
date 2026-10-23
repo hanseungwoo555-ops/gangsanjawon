@@ -14,7 +14,7 @@ import shutil
 import sys
 from datetime import date
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageStat
 
 import case_data as CDT
 import columns as CL
@@ -369,8 +369,10 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 <meta name="format-detection" content="telephone=no">
 <!-- 네이버 서치어드바이저 / 구글 서치콘솔 소유확인 코드를 받으면 content.py 의 VERIFY 값에 넣으세요 -->
 {''.join(f'<meta name="{k}" content="{v}">' for k, v in getattr(C, 'VERIFY', {}).items() if v)}
-<link rel="icon" href="{r("favicon.svg")}" type="image/svg+xml">
-<link rel="apple-touch-icon" href="{r("images/logo.png")}">
+<link rel="icon" href="{r("favicon.ico")}" sizes="48x48">
+<link rel="icon" href="{r("favicon-32.png")}" type="image/png" sizes="32x32">
+<link rel="icon" href="{r("icon-192.png")}" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="{r("apple-touch-icon.png")}">
 <link rel="alternate" type="text/plain" title="LLM summary" href="{r("llms.txt")}">
 <link rel="alternate" type="application/rss+xml" title="강산자원" href="{r("rss.xml")}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -537,6 +539,12 @@ def detail_photos(d):
     for i, (src, crop, kind, cap) in enumerate(d["photos"]):
         im = Image.open(os.path.join(DATA, "blog_img", src)).convert("RGB")
         w, h = im.size
+        gray = im.convert("L")  # 블로그에서 사진 아래에 붙인 흰 캡션 띠는 잘라낸다 (사진 자체는 그대로)
+        row = lambda y: ImageStat.Stat(gray.crop((0, y, w, y + 1))).mean[0]
+        for y in range(max(0, h - 100), h - 4):
+            if all(row(y + k) > 245 for k in range(4)):
+                im = im.crop((0, 0, w, y)); h = y
+                break
         if crop == "L":
             im = im.crop((0, 0, w // 2 - 3, h))
         elif crop == "R":
@@ -549,12 +557,11 @@ def detail_photos(d):
     return res
 
 
-def detail_pair(d):
-    """대표 썸네일용 (작업 전, 작업 후) 사진 쌍: 첫 장면의 전·후."""
+def detail_pair(d, cover=None):
+    """대표 썸네일용 같은 장면의 (작업 전, 작업 후) 사진 쌍. case_data 의 cover 순번을 쓴다."""
     ph = DETAIL_PHOTOS[d["slug"]]
-    b = next(p for p in ph if p["kind"] == "before")
-    a = next(p for p in ph if p["kind"] == "after")
-    return os.path.join(DIST, b["src"]), os.path.join(DIST, a["src"])
+    i, j = cover or d.get("cover") or (0, next(k for k, p in enumerate(ph) if p["kind"] == "after"))
+    return os.path.join(DIST, ph[i]["src"]), os.path.join(DIST, ph[j]["src"])
 
 
 def region_name(slug):
@@ -564,8 +571,8 @@ def region_name(slug):
 
 def detail_card(path, d, lazy=True):
     ph = DETAIL_PHOTOS[d["slug"]]
-    b = next(p for p in ph if p["kind"] == "before")
-    a = next(p for p in ph if p["kind"] == "after")
+    i, j = d.get("cover") or (0, next(k for k, p in enumerate(ph) if p["kind"] == "after"))
+    b, a = ph[i], ph[j]
     href = rel(path, f"cases/detail/{d['slug']}.html")
     return f"""<article class="case case-detail-card" data-tag="{e(d['cat'])}">
   <div class="case-pair">
@@ -669,6 +676,26 @@ def blog_card(path, p):
 
 
 # ---------------------------------------------------------------- 홈
+def home_features():
+    """홈의 정사각형 이미지 카드 목록: (링크, 제목, 설명, 썸네일). 각 카드는 하위 페이지 제목과 대표 이미지로 연결된다.
+    썸네일은 그 페이지의 대표 이미지(og·본문 첫 사진)와 같은 파일을 쓴다."""
+    out = []
+    for d in CDT.DETAILS:
+        out.append((f"cases/detail/{d['slug']}.html", d["title"], d["place"] + " 현장 기록", detail_pair(d)))
+    for slug in ("household", "estate", "trash-house", "moving"):
+        cs = cases_for_service(slug, 6)
+        out.append((f"services/{slug}.html", SVC[slug]["name"], SVC_SUB[slug], case_photo(cs[0]["id"])))
+    sofa = CL.TOPIC.get("sofa")
+    if sofa and "sofa" in QA.QA:
+        q = QA.QA["sofa"]
+        out.append(("column/sofa.html", q["title"], "버리는 방법·비용 조건", detail_pair(CDT.DETAIL[q["cases"][0]], q.get("cover"))))
+    res = []
+    for link, title, sub, photo in out:
+        key = re.sub(r"[^a-z0-9]+", "-", link.replace(".html", "").lower()).strip("-")
+        res.append((link, title, sub, make_thumb(key, title, photo)))
+    return res
+
+
 def build_home():
     p = "index.html"
     hero = CASE["b275"]
@@ -677,7 +704,10 @@ def build_home():
         for i, s in enumerate(SERVICES))
     home_cases = [CASE[i] for i in ["g000", "g012", "g090", "g109", "g131", "g047"] if i in CASE]
     cases = "".join(case_card(p, c) for c in home_cases)
-    details = "".join(detail_card(p, d) for d in CDT.DETAILS[:3])
+    feats = home_features()
+    details = "".join(
+        f'<article class="feat"><a href="{l}" tabindex="-1" aria-hidden="true"><img src="{th}" alt="{e(t)}" width="1000" height="1000" decoding="async"{" loading=\"lazy\"" if i > 3 else ""}></a>'
+        f'<h3><a href="{l}">{e(t)}</a></h3><p>{e(sub)}</p></article>' for i, (l, t, sub, th) in enumerate(feats))
     why = "".join(f"<div><h3>{e(t)}</h3><p>{e(d)}</p></div>" for t, d in C.WHY)
     reviews = "".join(f'<blockquote class="review"><p>{e(t)}</p><footer>당근 동네업체 후기 · {e(k)}</footer></blockquote>' for k, t in C.REVIEWS[:3])
     vehicles = "".join(f'<div class="vehicle"><b>{e(v["name"])}</b><p><strong>주요 작업</strong> {e(v["use"])}</p><p>{e(v["note"])}</p></div>' for v in C.VEHICLES)
@@ -713,8 +743,8 @@ def build_home():
     <div class="section-head"><span class="eyebrow">Before &amp; After</span><h2>작업 전과 후</h2>
       <p>강산자원이 작업한 현장 사진입니다. 전후 사진 {len(CASES)}건은 <a href="cases/index.html">작업사례</a>에서 보실 수 있습니다.</p></div>
     <div class="cases">{cases}</div>
-    <h3 class="sub-title">현장 상세 기록: 요청부터 완료 범위까지</h3>
-    <div class="cases">{details}</div>
+    <h3 class="sub-title">현장 기록과 안내 바로가기</h3>
+    <div class="feats">{details}</div>
   </div>
 </section>
 
@@ -805,7 +835,9 @@ def build_home():
 """
     page(p, "강산자원", "서울·경기·인천 폐기물 처리 30년, 강산자원. 대형폐기물·이사짐·유품정리·쓰레기집 정리, 사진 무료 견적 010-6338-4016",
          main, head_title="강산자원 | 30년 경력 폐기물 처리·쓰레기집 정리",
-         ld=[faq_ld(C.GENERAL_FAQS[:8])], og_photo=case_photo("b275"), og_sub="서울·경기·인천 폐기물 처리 30년. 사진 무료 견적, 100% 예약제.",
+         ld=[faq_ld(C.GENERAL_FAQS[:8]), {"@type": "ItemList", "name": "강산자원 현장 기록과 안내",
+             "itemListElement": [{"@type": "ListItem", "position": i + 1, "url": url(l), "name": t, "image": url(th)} for i, (l, t, _, th) in enumerate(feats)]}],
+         og_photo=case_photo("b275"), og_sub="서울·경기·인천 폐기물 처리 30년. 사진 무료 견적, 100% 예약제.",
          images=case_imgs(home_cases) + [x["src"] for d in CDT.DETAILS[:3] for x in DETAIL_PHOTOS[d["slug"]][:2]])
 
 
@@ -1361,7 +1393,7 @@ def build_columns(topic_kws):
                    "dateModified": TODAY, "mainEntityOfPage": url(p)}, faq_ld(faqs)]
             page(p, q["title"], q["lead"], main, head(q["title"], q["lead"], dict(CL.CD.GROUPS)[t["group"]]),
                  crumbs=[("column/index.html", "폐기물 칼럼"), (p, t["title"])], ld=ld,
-                 og_photo=detail_pair(qcases[0]) if qcases else case_photo(cs[0]["id"]), og_sub="버리는 방법·비용 조건·분해 반출", images=imgs)
+                 og_photo=detail_pair(qcases[0], q.get("cover")) if qcases else case_photo(cs[0]["id"]), og_sub="버리는 방법·비용 조건·분해 반출", images=imgs)
             continue
         main = f"""
 <section class="section">
@@ -1696,10 +1728,26 @@ def build_text_files():
     open(os.path.join(DIST, "llms-full.txt"), "w", encoding="utf-8").write("".join(out) + "\n")
 
 
+def make_icons():
+    """검색 결과 파비콘. 네이버는 SVG 안의 한글 글자를 그리지 못해(‘AC15’로 표시) PNG·ICO로 만든다."""
+    def small(size):
+        im = Image.new("RGB", (size * 4, size * 4), "#1c5a3e")
+        d = ImageDraw.Draw(im)
+        f = ImageFont.truetype(FONT_D, int(size * 4 * .72))
+        d.text((size * 2, size * 2 + size * .12), "강", font=f, fill="#f6c945", anchor="mm")
+        return im.resize((size, size), Image.LANCZOS)
+    small(32).save(os.path.join(DIST, "favicon-32.png"))
+    small(48).save(os.path.join(DIST, "favicon.ico"), sizes=[(16, 16), (32, 32), (48, 48)])
+    logo = Image.open(os.path.join(SRC, "images", "logo.png")).convert("RGB")
+    logo.resize((192, 192), Image.LANCZOS).save(os.path.join(DIST, "icon-192.png"))
+    logo.resize((180, 180), Image.LANCZOS).save(os.path.join(DIST, "apple-touch-icon.png"))
+
+
 def copy_static():
     shutil.copytree(os.path.join(SRC, "assets"), os.path.join(DIST, "assets"))
     shutil.copytree(os.path.join(SRC, "images"), os.path.join(DIST, "images"))
     shutil.copy(os.path.join(SRC, "favicon.svg"), os.path.join(DIST, "favicon.svg"))
+    make_icons()
     static = os.path.join(SRC, "static")  # 소유확인용 HTML 파일 등은 static/ 에 두면 사이트 맨 위에 그대로 올라간다
     if os.path.isdir(static):
         for name in (n for n in os.listdir(static) if not n.startswith(".")):
