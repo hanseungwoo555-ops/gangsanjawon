@@ -1,0 +1,2 @@
+# 홈페이지에 넣을 인스타그램 게시물 주소를 한 줄에 하나씩 적습니다. (공식 연결 IG_TOKEN 전까지 쓰는 수동 추가)
+# 예: https://www.instagram.com/reel/Del2AkmBi2A/

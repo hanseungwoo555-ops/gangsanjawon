@@ -141,13 +141,71 @@ def fetch_instagram_official(token):
     return items
 
 
+INSTA_LINKS = os.path.join(DATA, "instagram_links.txt")
+SHORTCODE_ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+
+def shortcode_date(code):
+    """게시물 주소의 코드에는 올린 시각이 들어 있다 (인스타그램 ID 앞부분 = 2011-08-24 기준 밀리초)."""
+    n = 0
+    for c in code:
+        n = n * 64 + SHORTCODE_ABC.index(c)
+    ms = (n >> 23) + 1314220021721
+    return datetime.fromtimestamp(ms / 1000).strftime("%Y-%m-%d")
+
+
+def fetch_instagram_embed(url):
+    """게시물 하나를 인스타그램 공식 퍼가기(embed) 페이지로 읽는다: 대표 사진, 설명글, 영상 여부."""
+    m = re.search(r"instagram\.com/(?:[\w.]+/)?(p|reel|reels|tv)/([\w-]+)", url)
+    if not m:
+        return None
+    kind, code = ("reel" if m.group(1) in ("reel", "reels", "tv") else "p"), m.group(2)
+    page = get(f"https://www.instagram.com/{kind}/{code}/embed/captioned/").decode("utf-8", "replace")
+    img = re.search(r'class="EmbeddedMediaImage"[^>]*src="([^"]+)"', page)
+    if not img or not save_image(html.unescape(img.group(1)), os.path.join(INSTA_IMG_DIR, f"{code}.jpg"), 720):
+        return None
+    cap = re.search(r'<div class="Caption">(.*?)<div class="CaptionComments">', page, re.S) or re.search(r'<div class="Caption">(.*?)</div>', page, re.S)
+    text = ""
+    if cap:
+        body = re.sub(r'<a class="CaptionUsername".*?</a>', "", cap.group(1), count=1, flags=re.S)
+        text = html.unescape(re.sub(r"<br\s*/?>", "\n", body))
+        text = re.sub(r"<[^>]+>", "", text).replace("\u200b", "").strip()
+    is_video = '"is_video":true' in page or kind == "reel"
+    return {"code": code, "url": f"https://www.instagram.com/{kind}/{code}/", "video": is_video,
+            "date": shortcode_date(code), "caption": text}
+
+
+def add_instagram_links(items):
+    """data/instagram_links.txt 에 적은 게시물 주소 중 아직 없는 것을 추가한다 (공식 연결 전 수동 추가용)."""
+    if not os.path.exists(INSTA_LINKS):
+        return items
+    have = {v["code"] for v in items}
+    for line in open(INSTA_LINKS, encoding="utf-8"):
+        url = line.strip()
+        if not url or url.startswith("#"):
+            continue
+        m = re.search(r"/(?:p|reel|reels|tv)/([\w-]+)", url)
+        if not m or m.group(1) in have:
+            continue
+        try:
+            v = fetch_instagram_embed(url)
+        except Exception as e:
+            print("  instagram 링크 실패:", url, e, file=sys.stderr)
+            continue
+        if v:
+            items.append(v); have.add(v["code"])
+            print("  instagram 링크 추가:", v["code"], v["date"])
+    return sorted(items, key=lambda v: v["date"], reverse=True)
+
+
 def sync_instagram():
     os.makedirs(INSTA_IMG_DIR, exist_ok=True)
     path = os.path.join(DATA, "instagram.json")
+    saved = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
     token = os.environ.get("IG_TOKEN", "").strip()
     if token:
         try:
-            items = fetch_instagram_official(token)
+            items = add_instagram_links(fetch_instagram_official(token))
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(items, f, ensure_ascii=False, indent=1)
             print(f"instagram(공식 API): {len(items)}개 게시물")
@@ -160,6 +218,10 @@ def sync_instagram():
         edges = json.loads(raw)["data"]["user"]["edge_owner_to_timeline_media"]["edges"]
     except Exception as e:
         print("instagram: 실패, 저장본 사용:", e, file=sys.stderr)
+        items = add_instagram_links(list(saved))
+        if len(items) != len(saved):
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(items, f, ensure_ascii=False, indent=1)
         return
     items = []
     for e in edges:
@@ -176,6 +238,7 @@ def sync_instagram():
             "date": datetime.fromtimestamp(n["taken_at_timestamp"]).strftime("%Y-%m-%d"),
             "caption": cap.replace("​", "").strip(),
         })
+    items = add_instagram_links(items)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=1)
     print(f"instagram: {len(items)}개 게시물")

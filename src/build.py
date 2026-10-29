@@ -301,12 +301,12 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
             item["dateModified"] = mod
     PAGES.append((path, title, desc, [og_rel] + ([thumb_rel] if thumb_rel else []) + (images or []), indexable))
     crumbs = crumbs or []
-    graph = [business_ld(), {
+    graph = [business_ld(), website_ld(), {
         "@type": "WebPage", "@id": url(path), "url": url(path), "name": full_title,
         "description": desc, "inLanguage": "ko-KR", "dateModified": mod,
         "primaryImageOfPage": {"@type": "ImageObject", "url": url(og_rel), "width": 1200, "height": 630},
         "image": [url(og_rel)] + ([url(thumb_rel)] if thumb_rel else []),
-        "isPartOf": {"@type": "WebSite", "name": "강산자원", "url": url("index.html")},
+        "isPartOf": {"@id": url("index.html") + "#website"},
         "about": {"@id": url("index.html") + "#business"},
     }]
     if crumbs:
@@ -473,7 +473,7 @@ def business_ld():
     return {
         "@type": "LocalBusiness", "@id": url("index.html") + "#business",
         "name": B["name"], "alternateName": B["name_en"],
-        "description": "서울 은평구 증산동에 본사를 둔 30년 경력 폐기물 처리·실내철거 전문업체. 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리·청소, 사무실·상가 원상복구, 실내철거. 서울·경기·인천 수도권 전 지역 출동, 사진 무료 견적.",
+        "description": "서울 은평구 증산동에 본사를 둔 30년 경력 폐기물 처리·실내철거 업체. 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거, 실내철거. 서울·경기·인천 수도권 출동. 상담 24시간, 작업은 100% 예약제, 사진을 보고 무료로 견적 안내. 매입은 하지 않음.",
         "url": url("index.html"), "telephone": B["phone_intl"],
         "image": url("images/og/home.jpg"), "logo": url("images/logo.png"),
         "priceRange": "사진 무료 견적",
@@ -485,7 +485,16 @@ def business_ld():
         "hasOfferCatalog": {"@type": "OfferCatalog", "name": "강산자원 서비스",
                             "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": s["name"], "url": url(f"services/{s['slug']}.html")}} for s in SERVICES]},
         "sameAs": [B["naver_place"], B["daangn"], B["instagram"], B["kakao_channel"], f"https://blog.naver.com/{BLOG_ID}"],
+        "hasMap": B["naver_place"],
+        "contactPoint": {"@type": "ContactPoint", "telephone": B["phone_intl"], "contactType": "customer service",
+                         "availableLanguage": "ko", "areaServed": "KR", "description": "전화·카카오톡 상담 24시간, 연중무휴. 작업은 상담 후 예약."},
     }
+
+
+def website_ld():
+    return {"@type": "WebSite", "@id": url("index.html") + "#website", "url": url("index.html"), "name": "강산자원",
+            "alternateName": [B["name_en"], "gangsanjawon.com"], "inLanguage": "ko-KR",
+            "publisher": {"@id": url("index.html") + "#business"}}
 
 
 def crumbs_ld(crumbs):
@@ -1632,7 +1641,8 @@ def build_misc():
 def build_text_files():
     with open(os.path.join(DIST, "robots.txt"), "w", encoding="utf-8") as f:
         f.write("User-agent: *\nAllow: /\n\n# 검색엔진과 AI 크롤러 모두 허용\n"
-                + "".join(f"User-agent: {b}\nAllow: /\n\n" for b in ("Yeti", "Googlebot", "Googlebot-Image", "Bingbot", "GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-SearchBot", "PerplexityBot", "Google-Extended"))
+                + "".join(f"User-agent: {b}\nAllow: /\n\n" for b in ("Yeti", "Daumoa", "Googlebot", "Googlebot-Image", "Bingbot", "Applebot", "Applebot-Extended", "GPTBot", "OAI-SearchBot", "ChatGPT-User",
+                                                                     "ClaudeBot", "Claude-SearchBot", "Claude-User", "PerplexityBot", "Perplexity-User", "Google-Extended", "meta-externalagent"))
                 + f"Sitemap: {url('sitemap.xml')}\n")
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">']
@@ -1668,8 +1678,14 @@ def build_text_files():
 ## 품목별 수거
 {links("items/")}
 
+## 현장 상세 기록 (요청·현장 조건·과정·완료 범위·원문 출처)
+{chr(10).join(f"- [{d['title']}]({url('cases/detail/' + d['slug'] + '.html')}): {d['place']}, 기록일 {d['date']}" for d in CDT.DETAILS)}
+
 ## 작업사례
 {links("cases/")}
+
+## 하는 일과 하지 않는 일
+{chr(10).join(f"- {a}: {b}" for a, b, _ in C.SCOPE_TABLE)}
 
 ## 안내
 - [무료견적·작업 절차]({url("estimate.html")})

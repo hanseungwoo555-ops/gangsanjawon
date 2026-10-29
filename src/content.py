@@ -11,6 +11,9 @@ ANALYTICS = {
     "naver": "",  # 네이버 애널리틱스 사이트 ID
 }
 
+# IndexNow 키 (Bing 등 IndexNow 참여 검색엔진에 바뀐 주소를 알린다). static/<키>.txt 와 같은 값.
+INDEXNOW_KEY = "3fbd9b7ba7cc1c230184efe1f02e6bd2"
+
 VERIFY = {
     "naver-site-verification": "f292f92709e3d9cbedbff93f2931ae8c96daad00",
     "google-site-verification": "8vqjHJG2bAPzJ9Zfl5iDZJKzrelQh9OVqh5aqzBas7c",
