@@ -48,6 +48,12 @@
 2. URL 검사 → 위 주소들을 넣고 ‘색인 생성 요청’
 3. 페이지(색인 생성) 보고서에서 ‘제외됨’ 사유 확인. `daily/` 글은 블로그 원문을 canonical로 지정한 noindex 페이지라 제외되는 것이 정상
 
+## 5-1. 자동 알림 (IndexNow)
+
+배포할 때마다 그날 내용이 바뀐 페이지를 IndexNow로 보냅니다. 받는 곳은 api.indexnow.org(Bing 등)와 searchadvisor.naver.com/indexnow(네이버)입니다. 키 파일: `https://gangsanjawon.com/3fbd9b7ba7cc1c230184efe1f02e6bd2.txt`.
+2026-11-03에 홈, 현장 상세 기록 11건, 다시 쓴 칼럼 6개, 사례가 있는 지역 페이지 등 주요 33개 주소를 두 곳 모두에 직접 보냈습니다(응답 200).
+IndexNow는 ‘수집 요청’이며 색인·노출을 보장하지 않습니다. 사이트맵 재제출은 계정 로그인이 필요해 직접 하셔야 합니다.
+
 ## 6. canonical·사이트맵 정책
 
 | 페이지 | 색인 | canonical | 사이트맵 |

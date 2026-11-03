@@ -54,10 +54,12 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-      - name: 바뀐 페이지를 검색엔진에 알림 (IndexNow)
+      - name: 바뀐 페이지를 검색엔진에 알림 (IndexNow: Bing 등 + 네이버)
         if: needs.build.outputs.indexnow != ''
         env:
           PAYLOAD: ${{ needs.build.outputs.indexnow }}
         run: |
-          curl -s -o /dev/null -w "IndexNow %{http_code}\n" -X POST https://api.indexnow.org/indexnow \
-            -H "Content-Type: application/json; charset=utf-8" --data "$PAYLOAD" || true
+          for ep in https://api.indexnow.org/indexnow https://searchadvisor.naver.com/indexnow; do
+            curl -s -o /dev/null -w "IndexNow $ep %{http_code}\n" -X POST "$ep" \
+              -H "Content-Type: application/json; charset=utf-8" --data "$PAYLOAD" || true
+          done
