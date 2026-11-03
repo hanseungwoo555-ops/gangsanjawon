@@ -54,7 +54,7 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-      - name: 바뀐 페이지를 검색엔진에 알림 (IndexNow: Bing 등 + 네이버)
+      - name: 바뀐 페이지를 검색엔진에 알림 (IndexNow - Bing 등과 네이버)
         if: needs.build.outputs.indexnow != ''
         env:
           PAYLOAD: ${{ needs.build.outputs.indexnow }}
