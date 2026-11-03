@@ -58,6 +58,7 @@ CASE = {c["id"]: c for c in CASES}
 CATS = [(k, n, d) for k, n, d in M.CASE_CATS if any(c["cat"] == k for c in CASES)]
 CAT_NAME = {k: n for k, n, _ in CATS}
 ITEMS = M.ITEMS
+ITEM_BY_SLUG = {i['slug']: i for i in ITEMS}
 GUIDES = list(C.GUIDES) + [M.TRASH_GUIDE]
 
 
@@ -236,7 +237,7 @@ def menu_groups():
         ("이용안내", "estimate.html", [("estimate.html", "무료견적·작업 절차", "7단계 절차와 비용 기준"), ("areas/index.html", "출동지역", "서울·경기·인천 전 지역"),
                                     ("guide/index.html", "폐기물 처리 가이드", f"현장 경험으로 쓴 안내 {len(GUIDES)}편"), ("faq.html", "자주 묻는 질문", "견적·일정·작업 범위"),
                                     ("reviews.html", "고객 후기", "당근·플레이스 후기")], False),
-        ("회사소개", "about.html", [("about.html", "강산자원 소개", "30년 경력, 근거와 운영 방식"), ("about.html#vehicles", "보유 차량", "1톤 트럭·집게차·사다리차"),
+        ("회사소개", "about.html", [("about.html", "강산자원 소개", "30년 경력, 근거와 운영 방식"), ("about.html#vehicles", "보유 차량", "1톤 트럭 2대·집게차"),
                                  ("contact.html", "연락처·오시는 길", "은평구 증산동 본사")], False),
     ]
 
@@ -473,7 +474,7 @@ def business_ld():
     return {
         "@type": "LocalBusiness", "@id": url("index.html") + "#business",
         "name": B["name"], "alternateName": B["name_en"],
-        "description": "서울 은평구 증산동에 본사를 둔 30년 경력 폐기물 처리·실내철거 업체. 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거, 실내철거. 서울·경기·인천 수도권 출동. 상담 24시간, 작업은 100% 예약제, 사진을 보고 무료로 견적 안내. 매입은 하지 않음.",
+        "description": "서울 은평구 증산동에 본사를 둔 폐기물 처리·실내철거 업체. 회사 운영 30년, 누적 10,000건 이상 현장 처리(자체 집계). 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거, 실내철거. 서울·경기·인천 수도권 출동. 상담 24시간, 작업은 100% 예약제, 사진을 보고 무료로 견적 안내. 매입은 하지 않음.",
         "url": url("index.html"), "telephone": B["phone_intl"],
         "image": url("images/og/home.jpg"), "logo": url("images/logo.png"),
         "priceRange": "사진 무료 견적",
@@ -486,6 +487,7 @@ def business_ld():
                             "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": s["name"], "url": url(f"services/{s['slug']}.html")}} for s in SERVICES]},
         "sameAs": [B["naver_place"], B["daangn"], B["instagram"], B["kakao_channel"], f"https://blog.naver.com/{BLOG_ID}"],
         "hasMap": B["naver_place"],
+        "paymentAccepted": "현금, 계좌이체",
         "contactPoint": {"@type": "ContactPoint", "telephone": B["phone_intl"], "contactType": "customer service",
                          "availableLanguage": "ko", "areaServed": "KR", "description": "전화·카카오톡 상담 24시간, 연중무휴. 작업은 상담 후 예약."},
     }
@@ -731,7 +733,7 @@ def build_home():
       <span class="eyebrow">서울·경기·인천 폐기물 처리 · 쓰레기집 정리 · 실내철거</span>
       <h1>버리기 힘든 짐,<br><em>30년 경력</em> 강산자원이<br>한 번에 비워드립니다</h1>
       <p class="hero-lead">가구 한 개부터 쓰레기집, 사무실·상가 철거까지. 집 안에서 분해·운반·반출하고 처리까지 맡습니다. 사진만 보내시면 견적은 무료입니다.</p>
-      <ul class="hero-tags"><li>24시간 상담</li><li>100% 예약제 작업</li><li>주말·공휴일 예약</li><li>사진 무료 견적</li></ul>
+      <ul class="hero-tags"><li>누적 10,000건 이상 현장</li><li>24시간 상담</li><li>100% 예약제 작업</li><li>사진 무료 견적</li></ul>
       <div class="btn-row">{btn_kakao()}{btn_call()}</div>
     </div>
     <div>
@@ -815,7 +817,7 @@ def build_home():
 
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Vehicles</span><h2>1톤 트럭부터 집게차, 사다리차까지 보유</h2><p>물량과 반출 조건을 확인한 뒤 현장에 맞는 차량을 정합니다.</p></div>
+    <div class="section-head"><span class="eyebrow">Vehicles</span><h2>1톤 트럭 2대·집게차 보유</h2><p>물량과 반출 조건을 확인한 뒤 현장에 맞는 차량을 정합니다. 사다리차가 필요하면 견적 때 함께 안내합니다.</p></div>
     <div class="vehicles">{vehicles}</div>
   </div>
 </section>
@@ -1229,11 +1231,15 @@ def build_about():
 <section class="section">
   <div class="wrap split">
     <article class="prose">
-      <p class="note"><strong>요약</strong> 강산자원은 서울 은평구 증산동에 본사를 둔 30년 경력의 폐기물 처리·실내철거 업체입니다. 가정집·사무실·상가의 폐기물 수거와 실내철거, 철거 후 남은 짐 정리를 한 번에 상담합니다.</p>
+      <p class="note"><strong>요약</strong> 강산자원은 서울 은평구 증산동에 본사를 둔 폐기물 처리·실내철거 업체로, 30년 동안 운영하며 10,000건 이상의 현장을 처리했습니다(자체 집계, 2026년 11월 기준). 가정집·사무실·상가의 폐기물 수거와 실내철거, 철거 후 남은 짐 정리를 한 번에 상담합니다.</p>
       <h2>하는 일</h2>
       <p>장롱·침대·소파 같은 대형폐기물과 가전 수거, 이사 전후 남은 짐 정리, 유품정리, 쓰레기집 정리, 사무실 집기 철수, 상가 폐업 정리와 원상복구 철거, 실내철거와 공사 잔재 반출을 합니다. 소량부터 대량까지 물량에 맞춰 견적을 안내합니다.</p>
       <h2>하지 않는 일</h2>
       <ul class="checklist"><li>물건 매입은 하지 않습니다. 수거와 처리만 합니다.</li><li>석면, 폐유, 화학 약품 같은 지정폐기물은 허가 업체가 처리해야 하므로 처리 방법을 안내합니다.</li><li>입주 청소·소독과 도배·장판 같은 마감 공사는 기본 범위에 들어가지 않습니다.</li></ul>
+      <h2>운영 기간과 처리 실적</h2>
+      <p>강산자원은 30년 동안 운영해 온 회사입니다. 그동안 처리한 현장은 10,000건 이상입니다. 이 숫자는 강산자원이 자체 집계한 누적 건수이며, 2026년 11월에 대표가 확인한 기준입니다.</p>
+      <h2>결제</h2>
+      <p>현금이나 계좌이체로 결제합니다. 사업장은 계산서 발행도 가능합니다. 결제 시점은 견적 상담 때 안내합니다.</p>
       <h2>상담과 작업 방식</h2>
       <p>상담은 전화와 카카오톡으로 24시간, 연중무휴 받습니다. 작업은 100% 예약제로, 상담 후 정한 날짜와 시간에 진행하며 주말·공휴일도 예약할 수 있습니다. 수도권 당일 출동은 그날 일정에 따라 상담으로 안내합니다.</p>
       <h2>작업 기록을 공개합니다</h2>
@@ -1245,8 +1251,8 @@ def build_about():
   </div>
 </section>
 <section class="section band"><div class="wrap"><div class="section-head"><h2>강산자원에 맡기는 이유</h2></div><div class="why">{why}</div></div></section>
-<section class="section" id="vehicles"><div class="wrap"><div class="section-head"><h2>보유 차량</h2><p>1톤 트럭부터 집게차, 사다리차까지 보유하고 있으며, 물량과 반출 조건을 확인한 뒤 차량을 정합니다.</p></div><div class="vehicles">{vehicles}</div></div></section>"""
-    page(p, "회사소개", "강산자원은 서울 은평구 증산동에 본사를 둔 30년 경력 폐기물 처리·실내철거 업체입니다. 하는 일과 하지 않는 일, 상담·작업 방식, 보유 차량.",
+<section class="section" id="vehicles"><div class="wrap"><div class="section-head"><h2>보유 차량</h2><p>1톤 트럭 2대와 집게차를 보유하고 있으며, 물량과 반출 조건을 확인한 뒤 차량을 정합니다. 사다리차가 필요한 현장은 견적 때 함께 안내합니다.</p></div><div class="vehicles">{vehicles}</div></div></section>"""
+    page(p, "회사소개", "강산자원은 서울 은평구 증산동의 폐기물 처리·실내철거 업체입니다. 운영 30년, 누적 10,000건 이상. 하는 일, 결제, 보유 차량.",
          main, head("회사소개", "폐기물 처리·실내철거 30년. 하는 일과 하지 않는 일, 일하는 방식을 소개합니다."),
          crumbs=[(p, "회사소개")], ld=[{"@type": "AboutPage", "name": "강산자원 회사소개", "url": url(p)}], og_sub="30년 경력 · 사진 무료 견적 · 100% 예약제")
 
@@ -1390,7 +1396,7 @@ def build_columns(topic_kws):
       {qa_sections(p, q['sections'], case_html)}
       <h2>자주 묻는 질문</h2>
       {faq_html(faqs, open_first=True)}
-      <p>소파 수거를 맡기실 때의 범위와 진행은 <a href="../items/{t['slug']}.html">품목별 수거: 소파·쇼파 방문수거</a>, 가구 전체 수거는 <a href="../services/{svc['slug']}.html">{e(svc['name'])}</a>에서 안내합니다.</p>
+      <p>{f'맡기실 때의 수거 범위와 진행은 <a href="../items/{t["slug"]}.html">품목별 수거: {e(ITEM_BY_SLUG[t["slug"]]["name"])}</a>, ' if t["slug"] in ITEM_BY_SLUG else ''}서비스 전체 안내는 <a href="../services/{svc['slug']}.html">{e(svc['name'])}</a>, 단계별 준비와 비용 기준은 <a href="../estimate.html">무료견적·작업 절차</a>에서 보실 수 있습니다.</p>
     </article>
     <aside class="aside">{cta_card()}<div class="note"><strong>같은 분류 칼럼</strong><ul>{"".join(f'<li><a href="{x["slug"]}.html">{e(x["title"])}</a></li>' for x in related)}</ul></div></aside>
   </div>
@@ -1402,7 +1408,7 @@ def build_columns(topic_kws):
                    "dateModified": TODAY, "mainEntityOfPage": url(p)}, faq_ld(faqs)]
             page(p, q["title"], q["lead"], main, head(q["title"], q["lead"], dict(CL.CD.GROUPS)[t["group"]]),
                  crumbs=[("column/index.html", "폐기물 칼럼"), (p, t["title"])], ld=ld,
-                 og_photo=detail_pair(qcases[0], q.get("cover")) if qcases else case_photo(cs[0]["id"]), og_sub="버리는 방법·비용 조건·분해 반출", images=imgs)
+                 og_photo=detail_pair(qcases[0], q.get("cover")) if qcases else case_photo(cs[0]["id"]), og_sub=q["lead"][:60], images=imgs)
             continue
         main = f"""
 <section class="section">
