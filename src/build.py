@@ -125,12 +125,14 @@ def case_pair(photo):
 
 
 def paste_pair(im, pair, box):
-    """box 영역에 작업 전·후 사진을 나란히 붙이고 라벨을 단다."""
+    """box 영역에 작업 전·후 사진을 나란히 붙이고 라벨을 단다. pair 세 번째 값이 있으면 그 라벨을 쓴다."""
+    labels = pair[2] if len(pair) > 2 else ("작업 전", "작업 후")
+    pair = pair[:2]
     x0, y0, x1, y1 = box
     half = (x1 - x0) // 2
     d = ImageDraw.Draw(im)
     fl = ImageFont.truetype(FONT_B, max(18, (y1 - y0) // 26))
-    for i, (src, label) in enumerate(zip(pair, ("작업 전", "작업 후"))):
+    for i, (src, label) in enumerate(zip(pair, labels)):
         ph = ImageOps.fit(Image.open(src).convert("RGB"), (half, y1 - y0), Image.LANCZOS)
         im.paste(ph, (x0 + i * half, y0))
         tw = d.textlength(label, font=fl)
@@ -560,6 +562,9 @@ def detail_photos(d):
             im = im.crop((0, 0, w // 2 - 3, h))
         elif crop == "R":
             im = im.crop((w // 2 + 3, 0, w, h))
+        elif crop in ("T1", "T2", "T3"):  # 세 장을 붙인 사진
+            k = int(crop[1]) - 1
+            im = im.crop((k * w // 3 + (3 if k else 0), 0, (k + 1) * w // 3 - (3 if k < 2 else 0), h))
         if im.width > 900:
             im = im.resize((900, round(im.height * 900 / im.width)), Image.LANCZOS)
         rel_path = f"images/case-detail/{d['slug']}-{i + 1}.jpg"
@@ -572,7 +577,7 @@ def detail_pair(d, cover=None):
     """대표 썸네일용 같은 장면의 (작업 전, 작업 후) 사진 쌍. case_data 의 cover 순번을 쓴다."""
     ph = DETAIL_PHOTOS[d["slug"]]
     i, j = cover or d.get("cover") or (0, next(k for k, p in enumerate(ph) if p["kind"] == "after"))
-    return os.path.join(DIST, ph[i]["src"]), os.path.join(DIST, ph[j]["src"])
+    return (os.path.join(DIST, ph[i]["src"]), os.path.join(DIST, ph[j]["src"]), (KIND_LABEL[ph[i]["kind"]], KIND_LABEL[ph[j]["kind"]]))
 
 
 def region_name(slug):
@@ -587,8 +592,8 @@ def detail_card(path, d, lazy=True):
     href = rel(path, f"cases/detail/{d['slug']}.html")
     return f"""<article class="case case-detail-card" data-tag="{e(d['cat'])}">
   <div class="case-pair">
-    <figure>{img(path, b['src'], b['cap'], b['w'], b['h'], lazy=lazy)}<figcaption>작업 전</figcaption></figure>
-    <figure>{img(path, a['src'], a['cap'], a['w'], a['h'], lazy=lazy)}<figcaption>작업 후</figcaption></figure>
+    <figure>{img(path, b['src'], b['cap'], b['w'], b['h'], lazy=lazy)}<figcaption>{KIND_LABEL[b['kind']]}</figcaption></figure>
+    <figure>{img(path, a['src'], a['cap'], a['w'], a['h'], lazy=lazy)}<figcaption>{KIND_LABEL[a['kind']]}</figcaption></figure>
   </div>
   <span class="tag">현장 상세 기록 · {e(d['place'])} · {d['date']}</span>
   <h3><a href="{href}">{e(d['title'])}</a></h3>
@@ -691,7 +696,7 @@ def home_features():
     """홈의 정사각형 이미지 카드 목록: (링크, 제목, 설명, 썸네일). 각 카드는 하위 페이지 제목과 대표 이미지로 연결된다.
     썸네일은 그 페이지의 대표 이미지(og·본문 첫 사진)와 같은 파일을 쓴다."""
     out = []
-    for d in CDT.DETAILS:
+    for d in sorted(CDT.DETAILS, key=lambda x: x["date"], reverse=True)[:6]:  # 최근 현장 기록 6건
         out.append((f"cases/detail/{d['slug']}.html", d["title"], d["place"] + " 현장 기록", detail_pair(d)))
     for slug in ("household", "estate", "trash-house", "moving"):
         cs = cases_for_service(slug, 6)

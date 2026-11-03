@@ -30,3 +30,14 @@
 | k01~k05 (5건) | behalf1oj 블로그 글 (은평·노원·서초) | 지역·날짜 확인 | 같은 현장 상세 페이지로 제목 링크 연결 |
 
 사진 화질 개선(업스케일)은 원본 해상도를 키운 것이며 내용을 새로 그리지 않았습니다. 상세 페이지 사진은 블로그 원본을 좌우로 나눈 것 외에 손대지 않았습니다.
+
+## 4. 2026-11-03 추가한 상세 기록 (6건)
+
+| 상세 페이지 | 원문 | 지역 | 사진 | 비고 |
+|---|---|---|---|---|
+| cases/detail/yongsan-office-desk-chair.html | behalf1oj/224458244881 (11-02) | 용산구 사무실 | 전 3 / 과정 1 / 후 3 | 고정 시설은 남김 |
+| cases/detail/cheongdam-office-chairs-evening.html | behalf1oj/224458237063 (11-01) | 강남구 청담동 | 전 2 / 과정 3 / 후 2 | 저녁 예약 방문, 내부 사진 없음 |
+| cases/detail/gangnam-kindergarten-rooftop-playground.html | behalf1oj/224458232234 (10-31) | 강남구 유치원 옥상 | 전 3 / 후 3 | |
+| cases/detail/guro-basement-storage-large-items.html | behalf1oj/224460415698 (10-31) | 구로구 재건축 아파트 지하창고 | 전 2 / 과정 4 | 원문 ‘예상 이미지’(-4) 제외, 완료 사진 없음 |
+| cases/detail/bucheon-estate-family-help.html | behalf1oj/224458224856 (10-30) | 부천시 가정집 | 전 3 / 후 3 | 원문 ‘예상 이미지’(-3 오른쪽) 제외 |
+| cases/detail/seongbuk-anam-bed-frame.html | behalf1oj/224458220202 (10-29) | 성북구 안암동 | 전 3 / 과정 1 / 후 2 | 원문의 고객 피드백 문장은 후기로 쓰지 않음 |
