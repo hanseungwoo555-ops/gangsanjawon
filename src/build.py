@@ -411,7 +411,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
   <div class="wrap">
     <div>
       <h2>강산자원</h2>
-      <p>30년 경력 폐기물 처리·실내철거 전문<br>{e(B["address"])} (증산동 186-6)<br>대표전화 <span class="tel">{B["phone"]}</span><br>상담 24시간·연중무휴 · 작업은 100% 예약제</p>
+      <p>30년 경력 폐기물 처리·실내철거 전문<br>{e(B["address"])} (증산역 인근)<br>대표전화 <span class="tel">{B["phone"]}</span><br>상담 24시간·연중무휴 · 작업은 100% 예약제</p>
     </div>
     <div>
       <h2>서비스</h2>
@@ -480,7 +480,7 @@ def business_ld():
         "url": url("index.html"), "telephone": B["phone_intl"],
         "image": url("images/og/home.jpg"), "logo": url("images/logo.png"),
         "priceRange": "사진 무료 견적",
-        "address": {"@type": "PostalAddress", "streetAddress": B["address_parts"]["street"], "addressLocality": B["address_parts"]["locality"],
+        "address": {"@type": "PostalAddress", "addressLocality": B["address_parts"]["locality"],
                     "addressRegion": B["address_parts"]["region"], "addressCountry": "KR"},
         "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "opens": "00:00", "closes": "23:59"}],
         "areaServed": [{"@type": "AdministrativeArea", "name": n} for n in ("서울특별시", "경기도", "인천광역시")],
@@ -1265,7 +1265,7 @@ def build_about():
 def build_areas():
     p = "areas/index.html"
     page(p, "출동지역", "강산자원은 서울 25개 구, 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다. 본사 서울 은평구 증산동, 작업은 예약제.",
-         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>강산자원 본사는 서울 은평구 증산로5길 14(증산역 인근)에 있습니다. 서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [("areas/" + k + ".html", a["full"] + " 폐기물 처리", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
+         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>강산자원 본사는 서울 은평구 증산동(증산역 인근)에 있습니다. 서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [("areas/" + k + ".html", a["full"] + " 폐기물 처리", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
          head("출동지역", "서울·경기·인천 수도권 전 지역으로 출동합니다."), crumbs=[(p, "출동지역")], og_sub="서울 25개 구 · 경기 · 인천 전 지역")
     for k, a in C.AREAS.items():
         p = f"areas/{k}.html"
@@ -1637,11 +1637,11 @@ def build_misc():
          head("고객 후기", "강산자원에 작업을 맡긴 고객분들이 남겨주신 이야기입니다."), crumbs=[(p, "고객 후기")], og_sub="당근·네이버 플레이스 고객 후기")
 
     p = "contact.html"
-    rows = [("대표전화", B["phone"]), ("카카오톡", "카카오톡 채널 ‘강산자원’ (사진 보내기 가능)"), ("주소", f"{B['address']} ({B['address_jibun']})"),
+    rows = [("대표전화", B["phone"]), ("카카오톡", "카카오톡 채널 ‘강산자원’ (사진 보내기 가능)"), ("위치", f"{B['address']} (증산역 인근)"),
             ("가까운 역", "증산역 (6호선·경의중앙선)"), ("상담 시간", B["hours"]), ("작업", B["work_policy"]), ("출동 지역", B["area"])]
-    page(p, "연락처·오시는 길", "강산자원 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’. 서울 은평구 증산로5길 14 (증산역 인근). 24시간 상담, 연중무휴.",
+    page(p, "연락처·오시는 길", "강산자원 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’. 서울 은평구 증산동 (증산역 인근). 24시간 상담, 연중무휴.",
          f"""<section class="section"><div class="wrap split"><div class="prose">{sheet(rows, title="연락처", sub="24시간 상담")}
-  <h2>오시는 길</h2><p>강산자원 본사는 서울 은평구 증산로5길 14에 있습니다. 6호선·경의중앙선 증산역에서 가깝습니다. 작업은 고객 현장으로 직접 방문해 진행하므로, 상담과 견적은 전화나 카카오톡으로 받으시면 됩니다.</p>
+  <h2>위치</h2><p>강산자원 본사는 서울 은평구 증산동, 6호선·경의중앙선 증산역 인근에 있습니다. 작업은 고객 현장으로 직접 방문해 진행하므로, 상담과 견적은 전화나 카카오톡으로 받으시면 됩니다.</p>
   <div class="btn-row"><a class="btn btn-ghost" href="{B['naver_place']}" target="_blank" rel="noopener">네이버 지도에서 보기</a></div></div>
 <aside class="aside">{cta_card()}</aside></div></section>""",
          head("연락처·오시는 길", "전화나 카카오톡으로 사진을 보내주시면 바로 견적을 드립니다."), crumbs=[(p, "연락처")],
@@ -1797,6 +1797,13 @@ if __name__ == "__main__":
         sync.sync_blog()
         sync.sync_instagram()
     BLOG = load_json("blog.json")
+    hide = re.compile(r"(서울\s*)?(은평구\s*)?증산로\s*5\s*길\s*14|증산동\s*186-6")  # 홈페이지에는 상세 주소를 싣지 않는다
+    for x in BLOG:
+        for bl in x["blocks"]:
+            if bl.get("text"):
+                bl["text"] = hide.sub("서울 은평구 증산동", bl["text"])
+            if bl["t"] == "table":
+                bl["rows"] = [r for r in bl["rows"] if not (r and r[0].strip() == "주소") and not any(hide.search(c) for c in r)]
     for x in BLOG:  # 요약은 목차를 건너뛴 첫 본문 문단으로
         paras = [b["text"] for b in x["blocks"] if b["t"] == "p" and len(b["text"]) > 40 and not re.match(r"^\d+\.", b["text"])]
         if paras:
