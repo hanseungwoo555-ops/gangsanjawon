@@ -240,7 +240,7 @@ def menu_groups():
                                     ("guide/index.html", "폐기물 처리 가이드", f"현장 경험으로 쓴 안내 {len(GUIDES)}편"), ("faq.html", "자주 묻는 질문", "견적·일정·작업 범위"),
                                     ("reviews.html", "고객 후기", "당근·플레이스 후기")], False),
         ("회사소개", "about.html", [("about.html", "강산자원 소개", "30년 경력, 근거와 운영 방식"), ("about.html#vehicles", "보유 차량", "1톤 트럭 2대·집게차"),
-                                 ("contact.html", "연락처·오시는 길", "은평구 증산동 본사")], False),
+                                 ("contact.html", "연락처", "전화·카카오톡 상담")], False),
     ]
 
 
@@ -411,7 +411,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
   <div class="wrap">
     <div>
       <h2>강산자원</h2>
-      <p>30년 경력 폐기물 처리·실내철거 전문<br>{e(B["address"])} (증산역 인근)<br>대표전화 <span class="tel">{B["phone"]}</span><br>상담 24시간·연중무휴 · 작업은 100% 예약제</p>
+      <p>30년 경력 폐기물 처리·실내철거 전문<br>대표전화 <span class="tel">{B["phone"]}</span><br>상담 24시간·연중무휴 · 작업은 100% 예약제</p>
     </div>
     <div>
       <h2>서비스</h2>
@@ -476,19 +476,16 @@ def business_ld():
     return {
         "@type": "LocalBusiness", "@id": url("index.html") + "#business",
         "name": B["name"], "alternateName": B["name_en"],
-        "description": "서울 은평구 증산동에 본사를 둔 폐기물 처리·실내철거 업체. 회사 운영 30년, 누적 10,000건 이상 현장 처리(자체 집계). 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거, 실내철거. 서울·경기·인천 수도권 출동. 상담 24시간, 작업은 100% 예약제, 사진을 보고 무료로 견적 안내. 매입은 하지 않음.",
+        "description": "서울·경기·인천 수도권 폐기물 처리·실내철거 업체. 회사 운영 30년, 누적 10,000건 이상 현장 처리(자체 집계). 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거, 실내철거. 서울·경기·인천 수도권 출동. 상담 24시간, 작업은 100% 예약제, 사진을 보고 무료로 견적 안내. 매입은 하지 않음.",
         "url": url("index.html"), "telephone": B["phone_intl"],
         "image": url("images/og/home.jpg"), "logo": url("images/logo.png"),
         "priceRange": "사진 무료 견적",
-        "address": {"@type": "PostalAddress", "addressLocality": B["address_parts"]["locality"],
-                    "addressRegion": B["address_parts"]["region"], "addressCountry": "KR"},
         "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "opens": "00:00", "closes": "23:59"}],
         "areaServed": [{"@type": "AdministrativeArea", "name": n} for n in ("서울특별시", "경기도", "인천광역시")],
         "knowsAbout": ["대형폐기물 수거", "폐가구 수거", "폐가전 수거", "이사 폐기물", "유품정리", "쓰레기집 정리", "쓰레기집 청소", "사무실 폐기물", "상가 원상복구", "실내철거", "사업장 폐기물"],
         "hasOfferCatalog": {"@type": "OfferCatalog", "name": "강산자원 서비스",
                             "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": s["name"], "url": url(f"services/{s['slug']}.html")}} for s in SERVICES]},
         "sameAs": [B["naver_place"], B["daangn"], B["instagram"], B["kakao_channel"], f"https://blog.naver.com/{BLOG_ID}"],
-        "hasMap": B["naver_place"],
         "paymentAccepted": "현금, 계좌이체",
         "contactPoint": {"@type": "ContactPoint", "telephone": B["phone_intl"], "contactType": "customer service",
                          "availableLanguage": "ko", "areaServed": "KR", "description": "전화·카카오톡 상담 24시간, 연중무휴. 작업은 상담 후 예약."},
@@ -774,7 +771,7 @@ def build_home():
 <section class="section">
   <div class="wrap">
     <div class="section-head"><span class="eyebrow">About</span><h2>강산자원은 이런 업체입니다</h2>
-      <p>서울 은평구 증산동에 본사를 둔 폐기물 처리·실내철거 전문업체입니다. 가정, 사무실, 상가, 공장과 창고에서 나오는 폐기물을 수거하고, 쓰레기집 정리부터 철거와 원상복구까지 한 팀이 진행합니다.</p></div>
+      <p>서울·경기·인천 수도권에서 일하는 폐기물 처리·실내철거 전문업체입니다. 가정, 사무실, 상가, 공장과 창고에서 나오는 폐기물을 수거하고, 쓰레기집 정리부터 철거와 원상복구까지 한 팀이 진행합니다.</p></div>
     {sheet(C.FACTS)}
   </div>
 </section>
@@ -829,7 +826,7 @@ def build_home():
 
 <section class="section band">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Area</span><h2>서울·경기·인천 어디든 출동합니다</h2><p>본사(은평구 증산동)를 기준으로 수도권 전 지역에 출동합니다. 작업은 예약제이며, 당일 출동 가능 여부는 그날 일정에 따라 상담으로 안내합니다.</p></div>
+    <div class="section-head"><span class="eyebrow">Area</span><h2>서울·경기·인천 어디든 출동합니다</h2><p>서울·경기·인천 수도권 전 지역에 출동합니다. 작업은 예약제이며, 당일 출동 가능 여부는 그날 일정에 따라 상담으로 안내합니다.</p></div>
     <div class="table-wrap"><table><tbody>{area_rows}</tbody></table></div>
   </div>
 </section>
@@ -1236,7 +1233,7 @@ def build_about():
 <section class="section">
   <div class="wrap split">
     <article class="prose">
-      <p class="note"><strong>요약</strong> 강산자원은 서울 은평구 증산동에 본사를 둔 폐기물 처리·실내철거 업체로, 30년 동안 운영하며 10,000건 이상의 현장을 처리했습니다(자체 집계, 2026년 11월 기준). 가정집·사무실·상가의 폐기물 수거와 실내철거, 철거 후 남은 짐 정리를 한 번에 상담합니다.</p>
+      <p class="note"><strong>요약</strong> 강산자원은 서울·경기·인천 수도권에서 일하는 폐기물 처리·실내철거 업체로, 30년 동안 운영하며 10,000건 이상의 현장을 처리했습니다(자체 집계, 2026년 11월 기준). 가정집·사무실·상가의 폐기물 수거와 실내철거, 철거 후 남은 짐 정리를 한 번에 상담합니다.</p>
       <h2>하는 일</h2>
       <p>장롱·침대·소파 같은 대형폐기물과 가전 수거, 이사 전후 남은 짐 정리, 유품정리, 쓰레기집 정리, 사무실 집기 철수, 상가 폐업 정리와 원상복구 철거, 실내철거와 공사 잔재 반출을 합니다. 소량부터 대량까지 물량에 맞춰 견적을 안내합니다.</p>
       <h2>하지 않는 일</h2>
@@ -1257,15 +1254,15 @@ def build_about():
 </section>
 <section class="section band"><div class="wrap"><div class="section-head"><h2>강산자원에 맡기는 이유</h2></div><div class="why">{why}</div></div></section>
 <section class="section" id="vehicles"><div class="wrap"><div class="section-head"><h2>보유 차량</h2><p>1톤 트럭 2대와 집게차를 보유하고 있으며, 물량과 반출 조건을 확인한 뒤 차량을 정합니다. 사다리차가 필요한 현장은 견적 때 함께 안내합니다.</p></div><div class="vehicles">{vehicles}</div></div></section>"""
-    page(p, "회사소개", "강산자원은 서울 은평구 증산동의 폐기물 처리·실내철거 업체입니다. 운영 30년, 누적 10,000건 이상. 하는 일, 결제, 보유 차량.",
+    page(p, "회사소개", "강산자원은 수도권 폐기물 처리·실내철거 업체입니다. 운영 30년, 누적 10,000건 이상. 하는 일, 결제, 보유 차량.",
          main, head("회사소개", "폐기물 처리·실내철거 30년. 하는 일과 하지 않는 일, 일하는 방식을 소개합니다."),
          crumbs=[(p, "회사소개")], ld=[{"@type": "AboutPage", "name": "강산자원 회사소개", "url": url(p)}], og_sub="30년 경력 · 사진 무료 견적 · 100% 예약제")
 
 
 def build_areas():
     p = "areas/index.html"
-    page(p, "출동지역", "강산자원은 서울 25개 구, 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다. 본사 서울 은평구 증산동, 작업은 예약제.",
-         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>강산자원 본사는 서울 은평구 증산동(증산역 인근)에 있습니다. 서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [("areas/" + k + ".html", a["full"] + " 폐기물 처리", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
+    page(p, "출동지역", "강산자원은 서울 25개 구, 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다. 작업은 예약제.",
+         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [("areas/" + k + ".html", a["full"] + " 폐기물 처리", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
          head("출동지역", "서울·경기·인천 수도권 전 지역으로 출동합니다."), crumbs=[(p, "출동지역")], og_sub="서울 25개 구 · 경기 · 인천 전 지역")
     for k, a in C.AREAS.items():
         p = f"areas/{k}.html"
@@ -1505,7 +1502,7 @@ def build_locals(region_kws):
     for area in ("서울", "경기", "인천"):
         rs = [r for r in CL.REGION.values() if r["area"] == area]
         blocks += f'<h2 style="margin-top:32px">{area}</h2>' + link_cards(p, [("local/" + r["slug"] + ".html", local_title(r, region_kws[r["slug"]]), ", ".join(clean_dongs(r)[:6]) or "전 지역") for r in rs])
-    page(p, "지역별 폐기물·철거 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역별 대형폐기물 수거, 폐기물 처리, 철거 안내. 강산자원 본사 은평구 증산동.",
+    page(p, "지역별 폐기물·철거 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역별 대형폐기물 수거, 폐기물 처리, 철거 안내.",
          f'<section class="section"><div class="wrap"><div class="prose"><p>지역을 고르면 출동 가능한 동네, 상담 때 확인할 조건, 그 지역에서 기록한 작업사례, 직접 버릴 때 참고할 안내를 보실 수 있습니다.</p></div>{blocks}</div></section>',
          head("지역별 폐기물·철거 안내", "서울·경기·인천 동네별 안내입니다."), crumbs=[(p, "지역별 안내")], og_sub="서울·경기·인천 지역별 안내")
     regions = list(CL.REGION.values())
@@ -1637,14 +1634,13 @@ def build_misc():
          head("고객 후기", "강산자원에 작업을 맡긴 고객분들이 남겨주신 이야기입니다."), crumbs=[(p, "고객 후기")], og_sub="당근·네이버 플레이스 고객 후기")
 
     p = "contact.html"
-    rows = [("대표전화", B["phone"]), ("카카오톡", "카카오톡 채널 ‘강산자원’ (사진 보내기 가능)"), ("위치", f"{B['address']} (증산역 인근)"),
-            ("가까운 역", "증산역 (6호선·경의중앙선)"), ("상담 시간", B["hours"]), ("작업", B["work_policy"]), ("출동 지역", B["area"])]
-    page(p, "연락처·오시는 길", "강산자원 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’. 서울 은평구 증산동 (증산역 인근). 24시간 상담, 연중무휴.",
+    rows = [("대표전화", B["phone"]), ("카카오톡", "카카오톡 채널 ‘강산자원’ (사진 보내기 가능)"), 
+            ("상담 시간", B["hours"]), ("작업", B["work_policy"]), ("출동 지역", B["area"])]
+    page(p, "연락처", "강산자원 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’. 24시간 상담, 연중무휴. 작업은 100% 예약제.",
          f"""<section class="section"><div class="wrap split"><div class="prose">{sheet(rows, title="연락처", sub="24시간 상담")}
-  <h2>위치</h2><p>강산자원 본사는 서울 은평구 증산동, 6호선·경의중앙선 증산역 인근에 있습니다. 작업은 고객 현장으로 직접 방문해 진행하므로, 상담과 견적은 전화나 카카오톡으로 받으시면 됩니다.</p>
-  <div class="btn-row"><a class="btn btn-ghost" href="{B['naver_place']}" target="_blank" rel="noopener">네이버 지도에서 보기</a></div></div>
+  <h2>상담과 방문</h2><p>작업은 고객 현장으로 직접 방문해 진행합니다. 상담과 견적은 전화나 카카오톡으로 받으시면 됩니다. 수도권 전 지역으로 출동합니다.</p></div>
 <aside class="aside">{cta_card()}</aside></div></section>""",
-         head("연락처·오시는 길", "전화나 카카오톡으로 사진을 보내주시면 바로 견적을 드립니다."), crumbs=[(p, "연락처")],
+         head("연락처", "전화나 카카오톡으로 사진을 보내주시면 바로 견적을 드립니다."), crumbs=[(p, "연락처")],
          ld=[{"@type": "ContactPage", "name": "강산자원 연락처", "url": url(p)}], og_sub="010-6338-4016 · 카카오톡 ‘강산자원’")
 
 
@@ -1678,7 +1674,7 @@ def build_text_files():
     links = lambda pre: "\n".join(f"- [{t}]({url(pth)}): {d}" for pth, t, d, _, idx in PAGES if pth.startswith(pre) and idx)
     llms = f"""# 강산자원
 
-> 강산자원은 서울 은평구 증산동에 본사를 둔 30년 경력 폐기물 처리·실내철거 전문업체입니다. 서울·경기·인천 수도권 전 지역에서 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리·청소, 사무실·상가 원상복구, 실내철거를 합니다. 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’에서 사진을 보내면 무료로 견적을 받을 수 있습니다.
+> 강산자원은 회사 운영 30년의 폐기물 처리·실내철거 전문업체입니다. 서울·경기·인천 수도권 전 지역에서 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리·청소, 사무실·상가 원상복구, 실내철거를 합니다. 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’에서 사진을 보내면 무료로 견적을 받을 수 있습니다.
 
 ## 핵심 정보
 {facts}
@@ -1801,7 +1797,7 @@ if __name__ == "__main__":
     for x in BLOG:
         for bl in x["blocks"]:
             if bl.get("text"):
-                bl["text"] = hide.sub("서울 은평구 증산동", bl["text"])
+                bl["text"] = hide.sub("", bl["text"])
             if bl["t"] == "table":
                 bl["rows"] = [r for r in bl["rows"] if not (r and r[0].strip() == "주소") and not any(hide.search(c) for c in r)]
     for x in BLOG:  # 요약은 목차를 건너뛴 첫 본문 문단으로
