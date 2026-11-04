@@ -2,7 +2,7 @@
 
 CMS 없이 파일 하나만 고치면 됩니다. 사이트맵·지역 페이지·서비스 페이지·품목 페이지·칼럼 연결은 자동입니다.
 
-1. 블로그(behalf1oj)에 현장 글을 올립니다. 3시간 안에 자동 동기화되어 `src/data/blog.json` 과 `src/data/blog_img/` 에 들어옵니다.
+1. 블로그(behalf1oj 또는 dqaslope)에 현장 글을 올립니다. 가져올 블로그 목록은 `src/sync.py` 의 `BLOG_IDS` 입니다. 3시간 안에 자동 동기화되어 `src/data/blog.json` 과 `src/data/blog_img/` 에 들어옵니다.
    (바로 반영하려면 GitHub → Actions → ‘홈페이지 자동 업데이트’ → Run workflow)
 2. `src/case_data.py` 의 `DETAILS` 목록에 한 건을 추가합니다. 기존 항목을 복사해서 고치면 됩니다.
    - `slug`: 영문 주소 (예: `jongno-store-closing`) → `cases/detail/jongno-store-closing.html`

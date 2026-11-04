@@ -16,7 +16,8 @@ from datetime import datetime
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(SRC, "data")
-BLOG_ID = "behalf1oj"
+BLOG_ID = "behalf1oj"  # 대표 블로그 (홈페이지 링크용)
+BLOG_IDS = ["behalf1oj", "dqaslope"]  # 홈페이지 ‘강산 일상’에 글을 가져올 블로그. 늘리려면 여기에 아이디를 추가
 INSTA_USER = "gangsan_30"
 BLOG_IMG_DIR = os.path.join(DATA, "blog_img")
 INSTA_IMG_DIR = os.path.join(DATA, "insta_img")
@@ -80,17 +81,9 @@ def parse_post(raw, log_no):
     return blocks
 
 
-def sync_blog():
-    os.makedirs(BLOG_IMG_DIR, exist_ok=True)
-    path = os.path.join(DATA, "blog.json")
-    old = {}
-    if os.path.exists(path):
-        old = {p["id"]: p for p in json.load(open(path, encoding="utf-8"))}
-    try:
-        root = ET.fromstring(get(f"https://rss.blog.naver.com/{BLOG_ID}.xml")).find("channel")
-    except Exception as e:
-        print("blog: RSS 실패, 저장본 사용:", e, file=sys.stderr)
-        return
+def fetch_blog(blog_id, old):
+    """블로그 하나의 RSS에서 글 목록을 받아 본문까지 읽는다. 이미 받은 글은 저장본을 그대로 쓴다."""
+    root = ET.fromstring(get(f"https://rss.blog.naver.com/{blog_id}.xml")).find("channel")
     posts = []
     for it in root.findall("item"):
         log_no = re.search(r"/(\d+)", it.findtext("link")).group(1)
@@ -100,21 +93,45 @@ def sync_blog():
         date = datetime.strptime(it.findtext("pubDate"), "%a, %d %b %Y %H:%M:%S %z")
         post = {
             "id": log_no,
+            "blog": blog_id,
             "title": strip(it.findtext("title")),
             "date": date.strftime("%Y-%m-%d"),
-            "url": f"https://blog.naver.com/{BLOG_ID}/{log_no}",
+            "url": f"https://blog.naver.com/{blog_id}/{log_no}",
             "summary": strip(it.findtext("description"))[:180],
             "tags": [t.strip() for t in (it.findtext("tag") or "").split(",") if t.strip()],
             "blocks": [],
         }
         try:
-            post["blocks"] = parse_post(get(f"https://m.blog.naver.com/{BLOG_ID}/{log_no}").decode("utf-8", "replace"), log_no)
+            post["blocks"] = parse_post(get(f"https://m.blog.naver.com/{blog_id}/{log_no}").decode("utf-8", "replace"), log_no)
         except Exception as e:
-            print("blog: 본문 실패", log_no, e, file=sys.stderr)
+            print("blog: 본문 실패", blog_id, log_no, e, file=sys.stderr)
         posts.append(post)
+    return posts
+
+
+def sync_blog():
+    """BLOG_IDS 의 모든 블로그 글을 합쳐 최신순으로 저장한다. 한 블로그가 실패하면 그 블로그는 저장본을 쓴다."""
+    os.makedirs(BLOG_IMG_DIR, exist_ok=True)
+    path = os.path.join(DATA, "blog.json")
+    old = {}
+    if os.path.exists(path):
+        old = {p["id"]: p for p in json.load(open(path, encoding="utf-8"))}
+    posts = []
+    for blog_id in BLOG_IDS:
+        try:
+            got = fetch_blog(blog_id, old)
+            print(f"blog {blog_id}: {len(got)}개 글")
+        except Exception as e:
+            got = [p for p in old.values() if p.get("blog", BLOG_IDS[0]) == blog_id]
+            print(f"blog {blog_id}: RSS 실패, 저장본 {len(got)}개 사용:", e, file=sys.stderr)
+        posts += got
+    seen, merged = set(), []
+    for p in sorted(posts, key=lambda p: (p["date"], p["id"]), reverse=True):
+        if p["id"] not in seen:
+            seen.add(p["id"]); merged.append(p)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(posts, f, ensure_ascii=False, indent=1)
-    print(f"blog: {len(posts)}개 글")
+        json.dump(merged, f, ensure_ascii=False, indent=1)
+    print(f"blog: 전체 {len(merged)}개 글")
 
 
 def fetch_instagram_official(token):

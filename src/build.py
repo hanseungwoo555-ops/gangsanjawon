@@ -437,7 +437,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
       <ul>
         <li><a href="{B["kakao_channel"]}" target="_blank" rel="noopener" data-loc="하단">카카오톡 채널</a></li>
         <li><a href="{B["naver_place"]}" target="_blank" rel="noopener">네이버 플레이스</a></li>
-        <li><a href="https://blog.naver.com/{BLOG_ID}" target="_blank" rel="noopener">네이버 블로그</a></li>
+        {"".join(f'<li><a href="https://blog.naver.com/{bid}" target="_blank" rel="noopener">{e(name)}</a></li>' for bid, name in BLOGS)}
         <li><a href="{B["instagram"]}" target="_blank" rel="noopener">인스타그램</a></li>
         <li><a href="{B["daangn"]}" target="_blank" rel="noopener">당근 동네업체</a></li>
       </ul>
@@ -457,6 +457,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 
 
 BLOG_ID = "behalf1oj"
+BLOGS = [("behalf1oj", "네이버 블로그"), ("dqaslope", "네이버 블로그 (365일 폐기물처리)")]  # sync.BLOG_IDS 와 같게
 
 
 def analytics_html():
@@ -485,7 +486,7 @@ def business_ld():
         "knowsAbout": ["대형폐기물 수거", "폐가구 수거", "폐가전 수거", "이사 폐기물", "유품정리", "쓰레기집 정리", "쓰레기집 청소", "사무실 폐기물", "상가 원상복구", "실내철거", "사업장 폐기물"],
         "hasOfferCatalog": {"@type": "OfferCatalog", "name": "강산자원 서비스",
                             "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": s["name"], "url": url(f"services/{s['slug']}.html")}} for s in SERVICES]},
-        "sameAs": [B["naver_place"], B["daangn"], B["instagram"], B["kakao_channel"], f"https://blog.naver.com/{BLOG_ID}"],
+        "sameAs": [B["naver_place"], B["daangn"], B["instagram"], B["kakao_channel"], *[f"https://blog.naver.com/{bid}" for bid, _ in BLOGS]],
         "paymentAccepted": "현금, 계좌이체",
         "contactPoint": {"@type": "ContactPoint", "telephone": B["phone_intl"], "contactType": "customer service",
                          "availableLanguage": "ko", "areaServed": "KR", "description": "전화·카카오톡 상담 24시간, 연중무휴. 작업은 상담 후 예약."},
@@ -1133,7 +1134,7 @@ def build_daily():
     p = "daily/index.html"
     cards = "".join(blog_card(p, x) for x in BLOG)
     main = f"""<section class="section"><div class="wrap">
-  <div class="prose" style="margin-bottom:28px"><p>강산자원 네이버 블로그(<a href="https://blog.naver.com/{BLOG_ID}" target="_blank" rel="noopener">blog.naver.com/{BLOG_ID}</a>)에 올라오는 현장 이야기입니다. 블로그에 새 글이 올라오면 이 페이지에도 자동으로 추가됩니다.</p></div>
+  <div class="prose" style="margin-bottom:28px"><p>강산자원 네이버 블로그({", ".join(f'<a href="https://blog.naver.com/{bid}" target="_blank" rel="noopener">blog.naver.com/{bid}</a>' for bid, _ in BLOGS)})에 올라오는 현장 이야기입니다. 블로그에 새 글이 올라오면 이 페이지에도 자동으로 추가됩니다.</p></div>
   <div class="posts">{cards or '<p>아직 글이 없습니다.</p>'}</div>
 </div></section>"""
     page(p, "강산 일상", "강산자원 블로그 현장 이야기. 가정집 폐기물, 이사 후 짐 정리, 유품정리, 집게차 수거 현장 기록.",
