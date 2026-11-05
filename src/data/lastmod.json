@@ -340,15 +340,23 @@
 "date": "2026-11-05"
 },
 "daily/224458250075.html": {
-"hash": "48ffa46e6af112b3",
+"hash": "8f9323170db77b08",
 "date": "2026-11-05"
 },
 "daily/224460415698.html": {
 "hash": "2e359e64817a9cd1",
 "date": "2026-11-01"
 },
+"daily/224465254032.html": {
+"hash": "1bb6ac3f7a44ec2c",
+"date": "2026-11-05"
+},
+"daily/224465306083.html": {
+"hash": "82a4554a1ec7e9de",
+"date": "2026-11-05"
+},
 "daily/index.html": {
-"hash": "3fc448d20321a840",
+"hash": "2e7f8a9f37ed9aaa",
 "date": "2026-11-05"
 },
 "estimate.html": {
@@ -408,7 +416,7 @@
 "date": "2026-10-21"
 },
 "index.html": {
-"hash": "a5400e9127b154cf",
+"hash": "205cd2f4574a7394",
 "date": "2026-11-05"
 },
 "items/aircon.html": {
