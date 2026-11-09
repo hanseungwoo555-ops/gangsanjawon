@@ -16,6 +16,7 @@ from datetime import date
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageStat
 
+import blog_cases as BCX
 import case_data as CDT
 import columns as CL
 import content as C
@@ -204,7 +205,64 @@ def make_thumb(key, title, photo):
 
 
 def case_photo(cid, side="after"):
+    """사례 사진 경로. 블로그에서 자동으로 뽑은 사례(a…)는 빌드 때 dist 에 만든다."""
+    if cid.startswith("a"):
+        return os.path.join(DIST, "images", "cases", f"{cid}-{side}.jpg")
     return os.path.join(SRC, "images", "cases", f"{cid}-{side}.jpg")
+
+
+CASE_REGION_ALL = dict(M.CASE_REGION)
+
+
+def add_blog_cases():
+    """블로그 글의 작업 전·후 사진 쌍을 사례 카드로 추가한다 (blog_cases.py). 새 글이 올라오면 자동으로 늘어난다."""
+    global CASES, CASE, CATS, CAT_NAME
+    import photo_dups
+    post_date = {x["id"]: (x["date"], x["id"]) for x in BLOG}
+    images = {}
+    for x in BLOG:
+        for bl in x["blocks"]:
+            p = os.path.join(DATA, "blog_img", bl.get("src", ""))
+            if bl["t"] == "img" and os.path.exists(p):
+                images[bl["src"]] = (x["id"], p)
+    dups = photo_dups.find(images, os.path.join(DATA, "photo_dups.json"))
+    owner = {n: v[0] for n, v in images.items()}
+
+    def is_dup(src, pid):  # 더 먼저 올라온 다른 글에 같은 사진이 있으면 중복
+        return any(post_date[owner[o]] < post_date[pid] for o in dups.get(src, []))
+    auto = BCX.extract(BLOG, is_dup)
+    out_dir = os.path.join(DIST, "images", "cases")
+    by_source = {d["source"].rsplit("/", 1)[-1]: d["slug"] for d in CDT.DETAILS}
+    added = []
+    for a in auto:
+        ok = True
+        for side in ("before", "after"):
+            src, crop = a[side]
+            try:
+                im = Image.open(os.path.join(DATA, "blog_img", src)).convert("RGB")
+            except OSError:
+                ok = False
+                break
+            w, h = im.size
+            if crop == "L":
+                im = im.crop((0, 0, w // 2 - 3, h))
+            elif crop == "R":
+                im = im.crop((w // 2 + 3, 0, w, h))
+            im = ImageOps.fit(im, (900, 1200), Image.LANCZOS)
+            im.save(os.path.join(out_dir, f"{a['id']}-{side}.jpg"), quality=82, optimize=True, progressive=True)
+        if not ok:
+            continue
+        added.append(dict(id=a["id"], title=a["title"], cat=a["cat"], service=a["service"], desc=a["desc"],
+                          region=a["region"], post=a["post"], date=a["date"]))
+        if a["region"]:
+            CASE_REGION_ALL[a["id"]] = a["region"]
+        if a["post"] in by_source:
+            CDT.CARD_TO_DETAIL[a["id"]] = by_source[a["post"]]
+    CASES = added + CASES
+    CASE = {c["id"]: c for c in CASES}
+    CATS = [(k, n, d) for k, n, d in M.CASE_CATS if any(c["cat"] == k for c in CASES)]
+    CAT_NAME = {k: n for k, n, _ in CATS}
+    print(f"블로그 사진 사례 {len(added)}건 추가")
 
 
 DEFAULT_PHOTO = case_photo("b275")
@@ -533,6 +591,8 @@ def case_card(path, c, lazy=True):
 def detail_link(path, c):
     """같은 현장의 상세 기록이 있으면 사례 제목을 상세 페이지로 연결한다."""
     slug = CDT.CARD_TO_DETAIL.get(c["id"])
+    if not slug and c.get("post"):
+        return f'<a href="{rel(path, "daily/" + c["post"] + ".html")}">{e(c["title"])}</a> <small class="more">블로그 현장 기록 →</small>'
     if not slug:
         return e(c["title"])
     return f'<a href="{rel(path, "cases/detail/" + slug + ".html")}">{e(c["title"])}</a> <small class="more">상세 기록 →</small>'
@@ -1331,7 +1391,7 @@ def pick_cases(cats, seed, n=6, prefer=(), words=()):
         out += pool[k:] + pool[:k]
     else:  # 지역 페이지: 분류를 섞어서 한 장씩
         order = ["household", "moving", "trash", "office", "estate", "demolition", "store", "outdoor"]
-        by = {c: [x for x in CASES if x["cat"] == c and x not in out] for c in order}
+        by = {c: [x for x in CASES if x["cat"] == c and x not in out and not x.get("region")] for c in order}
         i = 0
         while len(out) < n and any(by.values()):
             c = order[(i + k0) % len(order)]
@@ -1340,7 +1400,7 @@ def pick_cases(cats, seed, n=6, prefer=(), words=()):
                 out.append(lst.pop(k0 % len(lst)))
             i += 1
     if len(out) < n:
-        out += [c for c in CASES if c not in out]
+        out += [c for c in CASES if c not in out and (cats or not c.get("region"))]
     return out[:n]
 
 
@@ -1515,7 +1575,7 @@ def build_locals(region_kws):
         cards = region_cards(r, items)
         # ④ 이 지역으로 확인된 사례
         loc_details = details_where(lambda d: d["region"] == r["slug"])
-        loc_cards = [CASE[cid] for cid, rs in M.CASE_REGION.items() if rs == r["slug"] and cid in CASE and cid not in CDT.CARD_TO_DETAIL]
+        loc_cards = [CASE[cid] for cid, rs in CASE_REGION_ALL.items() if rs == r["slug"] and cid in CASE and cid not in CDT.CARD_TO_DETAIL]
         if loc_details or loc_cards:
             case_head = f"{r['name']}에서 작업한 사례"
             case_note = f"아래는 {r['name']}에서 실제로 작업한 현장입니다."
@@ -1532,7 +1592,10 @@ def build_locals(region_kws):
         checks = list(RI.CHECKS) + list(info.get("checks", []))
         check_html = "".join(f"<tr><th scope=\"row\">{e(k)}</th><td>{e(v)}</td></tr>" for k, v in checks)
         exp = [(d, x) for d in loc_details for x in d["process"]]
-        exp_html = ("<ul class=\"checklist\">" + "".join(f'<li>{e(x)} <a href="../cases/detail/{d["slug"]}.html">({e(d["place"])}, {d["date"]})</a></li>' for d, x in exp) + "</ul>") if exp \
+        exp_items = [f'<li>{e(x)} <a href="../cases/detail/{d["slug"]}.html">({e(d["place"])}, {d["date"]})</a></li>' for d, x in exp]
+        exp_items += [f'<li>{e(c["desc"] or c["title"])} <a href="../daily/{c["post"]}.html">(블로그 현장 기록, {c["date"]})</a></li>'
+                      for c in loc_cards if c.get("post")][:6]
+        exp_html = ("<ul class=\"checklist\">" + "".join(exp_items) + "</ul>") if exp_items \
             else f'<p class="muted">{e(r["name"])}에서 공개한 작업 기록은 아직 없습니다. 위 표는 상담 때 확인하는 항목이며, 이 지역 작업 이력을 뜻하지 않습니다.</p>'
         # 지자체 공식 안내
         off = info.get("official")
@@ -1816,6 +1879,7 @@ if __name__ == "__main__":
     os.makedirs(DIST)
     LASTMOD_OLD = json.load(open(LASTMOD_FILE, encoding="utf-8")) if os.path.exists(LASTMOD_FILE) else {}
     copy_static()
+    add_blog_cases()
     make_pair_images()
     DETAIL_PHOTOS = {d["slug"]: detail_photos(d) for d in CDT.DETAILS}
     REGION_KWS, TOPIC_KWS = CL.assign()
