@@ -579,8 +579,8 @@ def case_card(path, c, lazy=True):
     s = SVC[c["service"]]
     return f"""<article class="case" data-tag="{e(c['cat'])}">
   <div class="case-pair">
-    <figure>{img(path, f"images/cases/{c['id']}-before.jpg", c['title'] + ' 작업 전 모습', lazy=lazy)}<figcaption>작업 전</figcaption></figure>
-    <figure>{img(path, f"images/cases/{c['id']}-after.jpg", c['title'] + ' 작업 후 모습', lazy=lazy)}<figcaption>작업 후</figcaption></figure>
+    <figure>{img(path, f"images/cases/sm/{c['id']}-before.jpg", c['title'] + ' 작업 전 모습', 480, 640, lazy=lazy)}<figcaption>작업 전</figcaption></figure>
+    <figure>{img(path, f"images/cases/sm/{c['id']}-after.jpg", c['title'] + ' 작업 후 모습', 480, 640, lazy=lazy)}<figcaption>작업 후</figcaption></figure>
   </div>
   <span class="tag"><a href="{rel(path, 'cases/' + c['cat'] + '.html')}">{e(CAT_NAME[c['cat']])}</a>{'' if CAT_NAME[c['cat']] == s['name'] else f""" · <a href="{rel(path, 'services/' + s['slug'] + '.html')}">{e(s['name'])}</a>"""}</span>
   <h3>{detail_link(path, c)}</h3>
@@ -772,11 +772,16 @@ def home_features():
 
 def build_home():
     p = "index.html"
-    hero = CASE["b275"]
+    # 블로그에서 자동으로 뽑은 최신 사례를 먼저 보여준다 (글 하나에 한 장씩, 최신순). 없으면 기존 대표 사례.
+    latest, seen_posts = [], set()
+    for c in sorted((c for c in CASES if c.get("post")), key=lambda c: c["date"], reverse=True):
+        if c["post"] not in seen_posts:
+            seen_posts.add(c["post"]); latest.append(c)
+    hero = latest[0] if latest else CASE["b275"]
     svc_items = "".join(
         f'<a class="svc" href="services/{s["slug"]}.html"><h3><small>{i + 1:02d}</small>{e(s["name"])}</h3><p>{e(s["short"])}</p><span class="more">자세히 보기 →</span></a>'
         for i, s in enumerate(SERVICES))
-    home_cases = [CASE[i] for i in ["g000", "g012", "g090", "g109", "g131", "g047"] if i in CASE]
+    home_cases = (latest[1:7] + [CASE[i] for i in ["g000", "g012", "g090", "g109", "g131", "g047"] if i in CASE])[:6]
     cases = "".join(case_card(p, c) for c in home_cases)
     feats = home_features()
     details = "".join(
@@ -911,7 +916,7 @@ def build_home():
          main, head_title="강산자원 | 30년 경력 폐기물 처리·쓰레기집 정리",
          ld=[faq_ld(C.GENERAL_FAQS[:8]), {"@type": "ItemList", "name": "강산자원 현장 기록과 안내",
              "itemListElement": [{"@type": "ListItem", "position": i + 1, "url": url(l), "name": t, "image": url(th)} for i, (l, t, _, th) in enumerate(feats)]}],
-         og_photo=case_photo("b275"), og_sub="서울·경기·인천 폐기물 처리 30년. 사진 무료 견적, 100% 예약제.",
+         og_photo=case_photo(hero["id"]), og_sub="서울·경기·인천 폐기물 처리 30년. 사진 무료 견적, 100% 예약제.",
          images=case_imgs(home_cases) + [x["src"] for d in CDT.DETAILS[:3] for x in DETAIL_PHOTOS[d["slug"]][:2]])
 
 
@@ -1368,10 +1373,15 @@ def build_guides():
 
 # ---------------------------------------------------------------- 전후 사진 묶음 (칼럼 갤러리, 검색 이미지용)
 def make_pair_images():
-    """사례마다 작업 전·후를 나란히 붙인 정사각형 사진(900x900)을 만든다."""
+    """사례마다 작업 전·후를 나란히 붙인 정사각형 사진(900x900)과 카드용 작은 사진(480x640)을 만든다."""
     out_dir = os.path.join(DIST, "images", "pair")
+    sm_dir = os.path.join(DIST, "images", "cases", "sm")
     os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(sm_dir, exist_ok=True)
     for c in CASES:
+        for side in ("before", "after"):
+            sm = ImageOps.fit(Image.open(case_photo(c["id"], side)).convert("RGB"), (480, 640), Image.LANCZOS)
+            sm.save(os.path.join(sm_dir, f"{c['id']}-{side}.jpg"), quality=78, optimize=True, progressive=True)
         im = Image.new("RGB", (900, 900), "#1c5a3e")
         paste_pair(im, (case_photo(c["id"], "before"), case_photo(c["id"], "after")), (0, 0, 900, 900))
         im.save(os.path.join(out_dir, f"{c['id']}.jpg"), quality=84, optimize=True, progressive=True)
