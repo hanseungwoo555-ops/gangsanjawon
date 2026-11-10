@@ -54,6 +54,8 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000   # GitHub 쪽 반영이 늦을 때를 대비해 30분까지 기다림
       - name: 바뀐 페이지를 검색엔진에 알림 (IndexNow - Bing 등과 네이버)
         if: needs.build.outputs.indexnow != ''
         env:

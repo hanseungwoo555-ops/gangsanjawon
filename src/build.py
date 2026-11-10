@@ -1879,11 +1879,7 @@ def copy_static():
         for name in (n for n in os.listdir(static) if not n.startswith(".")):
             shutil.copy(os.path.join(static, name), os.path.join(DIST, name))
     # 블로그·인스타 이미지는 지금 목록에 있는 것만 복사
-    os.makedirs(os.path.join(DIST, "images", "daily"), exist_ok=True)
-    for x in BLOG:
-        for b in x["blocks"]:
-            if b["t"] == "img":
-                shutil.copy(os.path.join(DATA, "blog_img", b["src"]), os.path.join(DIST, "images", "daily", b["src"]))
+    # 2026-11-10: 블로그 글을 홈페이지에 싣지 않으므로 블로그 이미지는 복사하지 않음
     os.makedirs(os.path.join(DIST, "images", "insta"), exist_ok=True)
     for v in INSTA:
         shutil.copy(os.path.join(DATA, "insta_img", v["code"] + ".jpg"), os.path.join(DIST, "images", "insta", v["code"] + ".jpg"))
