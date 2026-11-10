@@ -19,13 +19,14 @@
 import re
 
 import local_data as LD
+import soften as SF
 
 BEFORE = re.compile(r"^(수거|정리|작업|철거) 전$")
 AFTER = re.compile(r"^(실제 )?(수거|정리|작업|철거|프레임 수거) 후$")
 BAD = ("예상", "참고", "원본")
 NO_REGION = ("촬영지", "지역별 안내", "지역 안내를 위한", "지역 독자를 위한", "안내용 사례")
 # 이미 손으로 정리한 사례(k01~k05)와 같은 글은 건너뛴다
-SKIP_POSTS = {"224444069357", "224444047796", "224444905249"}
+SKIP_POSTS = {"224444069357", "224444047796", "224444905249", "224458237063"}  # 마지막: 이미 1층에 있던 짐을 실어 간 현장(2026-11-10 제외)
 
 CAT_RULES = [
     ("estate", ("유품",)), ("trash", ("쓰레기",)),
@@ -112,7 +113,8 @@ def extract(blog, is_dup=lambda src, post_id: False):
     for post in blog:
         if post["id"] in SKIP_POSTS:
             continue
-        pairs = [p for p in find_pairs(post) if not (is_dup(p[0], post["id"]) or is_dup(p[3], post["id"]))]
+        pairs = [p for p in find_pairs(post) if not (is_dup(p[0], post["id"]) or is_dup(p[3], post["id"]))
+                 and not SF.DROP.search(p[2] + " " + p[5])]  # 차량·적재 장면은 빼기
         if not pairs:
             continue
         title = post["title"]
@@ -128,6 +130,6 @@ def extract(blog, is_dup=lambda src, post_id: False):
             out.append(dict(
                 id=f"a{post['id']}{n + 1}", title=base + (f" ({n + 1})" if len(pairs) > 1 else ""),
                 cat=cat, service=SERVICE[cat], region=region, title_region=title_region, post=post["id"], date=post["date"], url=post["url"],
-                desc=(f"작업 전: {bcap}. " if bcap else "") + (f"작업 후: {acap}." if acap else ""),
+                desc=SF.soften((f"작업 전: {bcap}. " if bcap else "") + (f"작업 후: {acap}." if acap else "")),
                 before=(bs, bc), after=(as_, ac)))
     return out

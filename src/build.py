@@ -22,6 +22,7 @@ import columns as CL
 import content as C
 import content_more as M
 import region_info as RI
+import soften as SF
 import topic_qa as QA
 
 SRC = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +33,48 @@ RFC_DATE = date.today().strftime("%a, %d %b %Y 00:00:00 +0900")
 B = C.BIZ
 e = html.escape
 
+# ---------------------------------------------------------------- 문구 정리 (2026-11-10)
+# 강산자원은 폐기물을 '가져가는' 업체가 아니라 '1층까지 내려드리는' 서비스로 소개한다. soften.py 참고.
+for _name in ("FACTS", "SERVICES", "PROCESS_DETAIL", "PROCESS_BY_SERVICE", "PHOTO_GUIDE", "PRICE_FACTORS", "WHY",
+              "AREAS", "GUIDES", "GENERAL_FAQS", "COST_GUIDE"):
+    setattr(C, _name, SF.walk(getattr(C, _name)))
+C.PROCESS = [(d["step"], d["desc"]) for d in C.PROCESS_DETAIL]
+C.REVIEWS = [r for r in C.REVIEWS if not SF.DROP.search(r[1]) and not SF.FORBIDDEN.search(r[1])]  # 후기 원문은 고치지 않고 해당 후기만 뺀다
+for _name in ("TRASH_SERVICE", "SERVICE_MORE", "ITEMS", "CASES", "TRASH_GUIDE", "CASE_CATS"):
+    setattr(M, _name, SF.walk(getattr(M, _name)))
+for _t in CL.CD.TOPICS:
+    _t.update(SF.walk(_t))
+for _q in list(QA.QA.values()) + list(QA.ITEM_QA.values()):
+    _q.update(SF.walk(_q))
+for _d in CDT.DETAILS:
+    _keys = [(p[0], p[1]) for p in _d["photos"]]
+    _cover = [_keys[i] for i in _d.get("cover", ())]
+    _d.update(SF.walk(_d))
+    _new = [(p[0], p[1]) for p in _d["photos"]]
+    _d["cover"] = tuple(_new.index(k) for k in _cover) if _cover and all(k in _new for k in _cover) else None
+RI.CHECKS = SF.walk(RI.CHECKS)
+for _info in RI.REGION_INFO.values():
+    for _k in ("checks", "faqs"):
+        if _k in _info:
+            _info[_k] = SF.walk(_info[_k])
+CL.REGION_FAQ = SF.walk(CL.REGION_FAQ)
+SERVICE_NAMES = {  # (이름, 한 줄 소개)
+    "household": ("가구·대형 짐 내려드림", "장롱·침대·소파처럼 혼자 옮기기 어려운 가구를 분해해 1층까지 내려드립니다."),
+    "appliances": ("가전 내려드림", "냉장고·세탁기·에어컨 등 가전을 떼어 내고 1층까지 내려드립니다."),
+    "moving": ("이사 짐 내려드림", "이사 전후 남은 가구·가전·생활짐을 1층까지 내려드립니다."),
+    "estate": ("유품정리·집정리", "가족과 남길 물건을 정한 뒤 집 안을 정리하고 1층까지 내려드립니다."),
+    "trash-house": ("쓰레기집 정리", "쓰레기와 짐이 쌓인 집을 분류하고 1층까지 내려드립니다."),
+    "office": ("사무실 집기 내려드림·철거", "책상·의자·파티션·캐비닛을 분해·철거해 1층까지 내려드립니다."),
+    "store": ("상가 철거·원상복구", "폐업 매장의 집기와 인테리어를 철거하고 잔재를 1층까지 내려드립니다."),
+    "demolition": ("실내철거·부분철거", "욕실·주방·칸막이 등을 철거하고 잔재를 1층까지 내려드립니다."),
+    "business": ("창고·공사 잔재 내려드림", "창고와 공사 현장에 남은 자재와 짐을 1층(건물 밖)까지 내려드립니다."),
+    "small": ("소량 짐 내려드림", "가구 2~3개, 매트리스 한 장도 1층까지 내려드립니다."),
+    "outdoor": ("화분·옥상·창고 정리", "화분과 옥상·베란다·창고 짐을 정리해 1층까지 내려드립니다."),
+}
+for _s in C.SERVICES + [M.TRASH_SERVICE]:
+    if _s["slug"] in SERVICE_NAMES:
+        _s["name"], _s["short"] = SERVICE_NAMES[_s["slug"]]
+
 # ---------------------------------------------------------------- 데이터 정리
 SERVICES = list(C.SERVICES)
 SERVICES.insert(4, M.TRASH_SERVICE)  # 유품정리 다음에 쓰레기집
@@ -40,7 +83,7 @@ for s in SERVICES:
     s["more_faqs"] = M.SERVICE_MORE.get(s["slug"], {}).get("faqs", [])
 SVC = {s["slug"]: s for s in SERVICES}
 SVC_SUB = {
-    "household": "장롱·침대·소파 등 큰 가구 방문 수거", "appliances": "냉장고·에어컨·세탁기·업소용 가전",
+    "household": "장롱·침대·소파 분해해 1층까지", "appliances": "냉장고·에어컨·세탁기·업소용 가전",
     "moving": "이사 전후 남은 짐 한 번에", "estate": "부모님 댁·고인의 집 정리",
     "trash-house": "쓰레기와 짐이 쌓인 집 비우기", "office": "책상·파티션·캐비닛 철수",
     "store": "폐업 매장 철거부터 원상복구까지", "demolition": "욕실·주방·가벽·바닥재 철거",
@@ -288,16 +331,16 @@ def menu_groups():
     loc = [(f"local/{r['slug']}.html", r["name"], "") for r in CL.REGION.values()]
     return [
         ("서비스", "services/index.html", [(f"services/{s['slug']}.html", s["name"], SVC_SUB[s["slug"]]) for s in SERVICES], False),
-        ("품목별 수거", "items/index.html", [(f"items/{i['slug']}.html", i["name"], i["sub"]) for i in ITEMS], False),
+        ("품목별 안내", "items/index.html", [(f"items/{i['slug']}.html", i["name"], i["sub"]) for i in ITEMS], False),
         ("작업사례", "cases/index.html", [("cases/index.html", "전체 사례", f"전후 사진 {len(CASES)}건"), ("cases/index.html#detail", "현장 상세 기록", f"과정까지 정리한 {len(CDT.DETAILS)}건")] +
          [(f"cases/{k}.html", n, f"{sum(1 for c in CASES if c['cat'] == k)}건") for k, n, _ in CATS], False),
         ("폐기물 칼럼", "column/index.html", col, True),
         ("지역별 안내", "local/index.html", loc, True),
-        ("소식", "daily/index.html", [("daily/index.html", "강산 일상", "블로그 현장 이야기"), ("videos.html", "현장 영상", "인스타그램 릴스")], False),
+        ("소식", "videos.html", [("videos.html", "현장 영상", "인스타그램 릴스")], False),
         ("이용안내", "estimate.html", [("estimate.html", "무료견적·작업 절차", "7단계 절차와 비용 기준"), ("areas/index.html", "출동지역", "서울·경기·인천 전 지역"),
-                                    ("guide/index.html", "폐기물 처리 가이드", f"현장 경험으로 쓴 안내 {len(GUIDES)}편"), ("faq.html", "자주 묻는 질문", "견적·일정·작업 범위"),
+                                    ("guide/index.html", "폐기물 배출 가이드", f"현장 경험으로 쓴 안내 {len(GUIDES)}편"), ("faq.html", "자주 묻는 질문", "견적·일정·작업 범위"),
                                     ("reviews.html", "고객 후기", "당근·플레이스 후기")], False),
-        ("회사소개", "about.html", [("about.html", "강산자원 소개", "30년 경력, 근거와 운영 방식"), ("about.html#vehicles", "보유 차량", "1톤 트럭 2대·집게차"),
+        ("회사소개", "about.html", [("about.html", "강산자원 소개", "30년 경력, 근거와 운영 방식"),
                                  ("contact.html", "연락처", "전화·카카오톡 상담")], False),
     ]
 
@@ -447,7 +490,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 <a class="skip" href="#main">본문 바로가기</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="{r("index.html")}" aria-label="강산자원 홈"><b>강산자원</b><span>폐기물 처리 30년</span></a>
+    <a class="logo" href="{r("index.html")}" aria-label="강산자원 홈"><b>강산자원</b><span>내려드림·철거 30년</span></a>
     <nav class="nav" aria-label="주 메뉴"><ul>{"".join(nav_items)}</ul></nav>
     <div class="header-call">{btn_call(loc="상단")}</div>
     <details class="menu"><summary>메뉴</summary><nav class="menu-panel" aria-label="모바일 메뉴">{"".join(mob)}</nav></details>
@@ -469,7 +512,7 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
   <div class="wrap">
     <div>
       <h2>강산자원</h2>
-      <p>30년 경력 폐기물 처리·실내철거 전문<br>대표전화 <span class="tel">{B["phone"]}</span><br>상담 24시간·연중무휴 · 작업은 100% 예약제</p>
+      <p>30년 경력 폐기물 내려드림·실내철거 전문<br>대표전화 <span class="tel">{B["phone"]}</span><br>상담 24시간·연중무휴 · 작업은 100% 예약제</p>
     </div>
     <div>
       <h2>서비스</h2>
@@ -478,12 +521,11 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
     <div>
       <h2>안내</h2>
       <ul>
-        <li><a href="{r("items/index.html")}">품목별 수거</a></li>
+        <li><a href="{r("items/index.html")}">품목별 안내</a></li>
         <li><a href="{r("cases/index.html")}">작업사례 (전후 사진)</a></li>
-        <li><a href="{r("daily/index.html")}">강산 일상 (현장 이야기)</a></li>
         <li><a href="{r("videos.html")}">작업 영상</a></li>
         <li><a href="{r("estimate.html")}">무료견적·작업 절차</a></li>
-        <li><a href="{r("guide/index.html")}">폐기물 처리 가이드</a></li>
+        <li><a href="{r("guide/index.html")}">폐기물 배출 가이드</a></li>
         <li><a href="{r("faq.html")}">자주 묻는 질문</a></li>
         <li><a href="{r("reviews.html")}">고객 후기</a></li>
         <li><a href="{r("areas/index.html")}">출동지역</a></li>
@@ -535,13 +577,13 @@ def business_ld():
     return {
         "@type": "LocalBusiness", "@id": url("index.html") + "#business",
         "name": B["name"], "alternateName": B["name_en"],
-        "description": "서울·경기·인천 수도권 폐기물 처리·실내철거 업체. 회사 운영 30년, 누적 10,000건 이상 현장 처리(자체 집계). 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거, 실내철거. 서울·경기·인천 수도권 출동. 상담 24시간, 작업은 100% 예약제, 사진을 보고 무료로 견적 안내. 매입은 하지 않음.",
+        "description": "서울·경기·인천 수도권 폐기물 내려드림·실내철거 업체. 회사 운영 30년, 누적 10,000건 이상 현장(자체 집계). 가구·가전·생활짐을 분해해 1층까지 내려드리고, 실내철거·부분철거 후 잔재를 1층까지 내려드림. 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거. 상담 24시간, 작업은 100% 예약제, 사진을 보고 무료로 견적 안내.",
         "url": url("index.html"), "telephone": B["phone_intl"],
         "image": url("images/og/home.jpg"), "logo": url("images/logo.png"),
         "priceRange": "사진 무료 견적",
         "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "opens": "00:00", "closes": "23:59"}],
         "areaServed": [{"@type": "AdministrativeArea", "name": n} for n in ("서울특별시", "경기도", "인천광역시")],
-        "knowsAbout": ["대형폐기물 수거", "폐가구 수거", "폐가전 수거", "이사 폐기물", "유품정리", "쓰레기집 정리", "쓰레기집 청소", "사무실 폐기물", "상가 원상복구", "실내철거", "사업장 폐기물"],
+        "knowsAbout": ["가구 1층 내려드림", "가전 내려드림", "이사 짐 내려드림", "유품정리", "쓰레기집 정리", "실내철거", "부분철거", "상가 원상복구 철거", "사무실 집기 철거"],
         "hasOfferCatalog": {"@type": "OfferCatalog", "name": "강산자원 서비스",
                             "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": s["name"], "url": url(f"services/{s['slug']}.html")}} for s in SERVICES]},
         "sameAs": [B["naver_place"], B["daangn"], B["instagram"], B["kakao_channel"], *[f"https://blog.naver.com/{bid}" for bid, _ in BLOGS]],
@@ -592,7 +634,7 @@ def detail_link(path, c):
     """같은 현장의 상세 기록이 있으면 사례 제목을 상세 페이지로 연결한다."""
     slug = CDT.CARD_TO_DETAIL.get(c["id"])
     if not slug and c.get("post"):
-        return f'<a href="{rel(path, "daily/" + c["post"] + ".html")}">{e(c["title"])}</a> <small class="more">블로그 현장 기록 →</small>'
+        return e(c["title"])
     if not slug:
         return e(c["title"])
     return f'<a href="{rel(path, "cases/detail/" + slug + ".html")}">{e(c["title"])}</a> <small class="more">상세 기록 →</small>'
@@ -793,14 +835,14 @@ def build_home():
     area_rows = "".join(f'<tr><th scope="row"><a href="areas/{k}.html">{e(a["full"])}</a></th><td>{e(", ".join(a["districts"]))}</td></tr>' for k, a in C.AREAS.items())
     item_chips = "".join(f'<li><a href="items/{i["slug"]}.html">{e(i["name"])}</a></li>' for i in ITEMS)
     videos = "".join(insta_card(p, v) for v in INSTA[:4])
-    posts = "".join(blog_card(p, x) for x in BLOG[:3])
+    posts = ""  # 2026-11-10: 블로그 글 목록은 홈에 싣지 않음
     main = f"""
 <section class="hero">
   <div class="wrap">
     <div class="hero-copy">
-      <span class="eyebrow">서울·경기·인천 폐기물 처리 · 쓰레기집 정리 · 실내철거</span>
-      <h1>버리기 힘든 짐,<br><em>30년 경력</em> 강산자원이<br>한 번에 비워드립니다</h1>
-      <p class="hero-lead">가구 한 개부터 쓰레기집, 사무실·상가 철거까지. 집 안에서 분해·운반·반출하고 처리까지 맡습니다. 사진만 보내시면 견적은 무료입니다.</p>
+      <span class="eyebrow">서울·경기·인천 폐기물 내려드림 · 쓰레기집 정리 · 실내철거</span>
+      <h1>옮기기 힘든 짐,<br><em>30년 경력</em> 강산자원이<br>1층까지 내려드립니다</h1>
+      <p class="hero-lead">혼자 옮기기 어려운 가구·가전·생활짐을 분해해 1층까지 내려드리고, 실내철거 후 나온 잔재도 1층까지 내려드립니다. 사진만 보내시면 견적은 무료입니다.</p>
       <ul class="hero-tags"><li>누적 10,000건 이상 현장</li><li>24시간 상담</li><li>100% 예약제 작업</li><li>사진 무료 견적</li></ul>
       <div class="btn-row">{btn_kakao()}{btn_call()}</div>
     </div>
@@ -837,7 +879,7 @@ def build_home():
 <section class="section">
   <div class="wrap">
     <div class="section-head"><span class="eyebrow">About</span><h2>강산자원은 이런 업체입니다</h2>
-      <p>서울·경기·인천 수도권에서 일하는 폐기물 처리·실내철거 전문업체입니다. 가정, 사무실, 상가, 공장과 창고에서 나오는 폐기물을 수거하고, 쓰레기집 정리부터 철거와 원상복구까지 한 팀이 진행합니다.</p></div>
+      <p>서울·경기·인천 수도권에서 일하는 폐기물 내려드림·실내철거 전문업체입니다. 가정, 사무실, 상가, 창고의 짐을 분해해 1층까지 내려드리고, 쓰레기집 정리부터 철거와 원상복구까지 진행합니다.</p></div>
     {sheet(C.FACTS)}
   </div>
 </section>
@@ -883,12 +925,7 @@ def build_home():
   </div>
 </section>''' if posts else ''}
 
-<section class="section">
-  <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Vehicles</span><h2>1톤 트럭 2대·집게차 보유</h2><p>물량과 반출 조건을 확인한 뒤 현장에 맞는 차량을 정합니다. 사다리차가 필요하면 견적 때 함께 안내합니다.</p></div>
-    <div class="vehicles">{vehicles}</div>
-  </div>
-</section>
+
 
 <section class="section band">
   <div class="wrap">
@@ -912,11 +949,11 @@ def build_home():
   </div>
 </section>
 """
-    page(p, "강산자원", "서울·경기·인천 폐기물 처리 30년, 강산자원. 대형폐기물·이사짐·유품정리·쓰레기집 정리, 사진 무료 견적 010-6338-4016",
-         main, head_title="강산자원 | 30년 경력 폐기물 처리·쓰레기집 정리",
+    page(p, "강산자원", "서울·경기·인천 폐기물 내려드림·철거 30년, 강산자원. 가구·이삿짐·유품정리·쓰레기집 정리, 1층까지 내려드림. 사진 무료 견적 010-6338-4016",
+         main, head_title="강산자원 | 폐기물 1층까지 내려드림·실내철거",
          ld=[faq_ld(C.GENERAL_FAQS[:8]), {"@type": "ItemList", "name": "강산자원 현장 기록과 안내",
              "itemListElement": [{"@type": "ListItem", "position": i + 1, "url": url(l), "name": t, "image": url(th)} for i, (l, t, _, th) in enumerate(feats)]}],
-         og_photo=case_photo(hero["id"]), og_sub="서울·경기·인천 폐기물 처리 30년. 사진 무료 견적, 100% 예약제.",
+         og_photo=case_photo(hero["id"]), og_sub="1층까지 내려드림·실내철거 30년. 사진 무료 견적, 100% 예약제.",
          images=case_imgs(home_cases) + [x["src"] for d in CDT.DETAILS[:3] for x in DETAIL_PHOTOS[d["slug"]][:2]])
 
 
@@ -926,7 +963,7 @@ def build_services():
     items = "".join(
         f'<a class="svc" href="{s["slug"]}.html"><h3><small>{i + 1:02d}</small>{e(s["name"])}</h3><p>{e(s["short"])}</p><span class="more">자세히 보기 →</span></a>'
         for i, s in enumerate(SERVICES))
-    page(p, "서비스 안내", f"강산자원 폐기물 처리 서비스 {len(SERVICES)}가지: " + ", ".join(s["name"] for s in SERVICES) + ".",
+    page(p, "서비스 안내", f"강산자원 서비스 {len(SERVICES)}가지: " + ", ".join(s["name"] for s in SERVICES) + ".",
          f'<section class="section"><div class="wrap"><div class="svc-grid">{items}</div></div></section>',
          head("서비스 안내", "가구 한 점부터 쓰레기집, 상가 폐업 철거, 공사 현장 폐기물까지 강산자원이 처리하는 일입니다."),
          crumbs=[(p, "서비스")], og_sub="가정·사무실·상가·사업장 폐기물, 쓰레기집, 철거까지",
@@ -955,14 +992,14 @@ def build_services():
       <ul class="checklist">{sits}</ul>
       <h2>{e(s['name'])}, 왜 어려울까요</h2>
       {intro}
-      <h2>이런 물건을 처리합니다</h2>
+      <h2>이런 물건을 내려드립니다</h2>
       <ul class="chips">{chips}</ul>
       {f'<h2>맡기기 전에 직접 하실 수 있는 준비</h2><div class="why why-2">{selfs}</div>' if selfs else ''}
       {f'<h2>강산자원은 이렇게 진행합니다</h2>{steps_html(s["approach"])}' if s.get("approach") else ''}
       <h2>작업 전에 알아두시면 좋은 점</h2>
       <div class="why why-2">{notes}</div>
       <h2>비용 안내</h2>
-      <p>{e(s['name'])} 비용은 물량, 품목, 층수와 엘리베이터 유무, 분해·철거 여부, 차량 진입 여건에 따라 달라집니다. 그래서 고정 가격표 대신 현장 사진을 보고 무료로 견적을 안내합니다. 무료인 것은 견적이며, 수거·처리 비용은 견적에서 포함 범위와 함께 안내합니다. <a href="../estimate.html#cost">비용이 정해지는 기준</a>과 <a href="../estimate.html#process">단계별 진행 절차</a>를 참고해 주세요.</p>
+      <p>{e(s['name'])} 비용은 물량, 품목, 층수와 엘리베이터 유무, 분해·철거 여부, 1층에 내려놓을 공간에 따라 달라집니다. 그래서 고정 가격표 대신 현장 사진을 보고 무료로 견적을 안내합니다. 무료인 것은 견적이며, 작업 비용은 견적에서 포함 범위와 함께 안내합니다. <a href="../estimate.html#cost">비용이 정해지는 기준</a>과 <a href="../estimate.html#process">단계별 진행 절차</a>를 참고해 주세요.</p>
     </article>
     <aside class="aside">
       {cta_card()}
@@ -977,12 +1014,11 @@ def build_services():
 {f'<section class="section"><div class="wrap"><div class="section-head"><h2>함께 읽으면 좋은 글</h2></div>{link_cards(p, [(f"guide/{g['slug']}.html", g["title"], g["desc"]) for g in guides])}</div></section>' if guides else ''}
 """
         desc = f"{s['name']}, 30년 경력 강산자원. {SVC_SUB[s['slug']]}. 서울·경기·인천 출동, 사진 무료 견적 010-6338-4016"
-        ld = [{"@type": "Service", "name": s["name"], "serviceType": s["keywords"][0], "description": s["short"] + " " + " ".join(s["intro"]),
+        ld = [{"@type": "Service", "name": s["name"], "serviceType": s["name"], "description": s["short"] + " " + " ".join(s["intro"]),
                "provider": {"@id": url("index.html") + "#business"},
                "areaServed": [{"@type": "AdministrativeArea", "name": n} for n in ("서울특별시", "경기도", "인천광역시")],
-               "keywords": ", ".join(s["keywords"]),
                "image": [url(x) for x in case_imgs(cs[:2])],
-               "offers": {"@type": "Offer", "description": "현장 사진을 보고 견적 안내 (견적은 무료, 수거·처리 비용은 견적으로 안내)"}}, faq_ld(faqs)]
+               "offers": {"@type": "Offer", "description": "현장 사진을 보고 견적 안내 (견적은 무료, 작업 비용은 견적으로 안내)"}}, faq_ld(faqs)]
         page(p, s["name"], desc, main, head(s["name"], s["short"], "서비스"),
              crumbs=[("services/index.html", "서비스"), (p, s["name"])], ld=ld,
              og_photo=case_photo(cs[0]["id"]) if cs else None, og_sub=SVC_SUB[s["slug"]] + " · 사진 무료 견적",
@@ -992,10 +1028,10 @@ def build_services():
 # ---------------------------------------------------------------- 품목별
 def build_items():
     p = "items/index.html"
-    page(p, "품목별 수거", "장롱, 침대·매트리스, 소파, 냉장고, 에어컨, 세탁기, 피아노, 운동기구, 사무용 가구, 파티션, 화분, 파렛트 등 품목별 수거 방법과 주의할 점.",
+    page(p, "품목별 안내", "장롱, 침대·매트리스, 소파, 냉장고, 에어컨, 세탁기, 피아노, 운동기구, 사무용 가구, 파티션, 화분, 파렛트 등 품목별로 1층까지 내려드리는 방법과 주의할 점.",
          f'<section class="section"><div class="wrap">{link_cards(p, [("items/" + i["slug"] + ".html", i["name"], i["sub"]) for i in ITEMS])}</div></section>',
-         head("품목별 수거", "버리실 물건을 고르면 옮기는 방법과 주의할 점, 비슷한 작업사례를 보실 수 있습니다."),
-         crumbs=[(p, "품목별 수거")], og_sub="장롱·침대·냉장고·에어컨·피아노 등 품목별 안내")
+         head("품목별 안내", "물건을 고르면 옮기는 방법과 주의할 점, 비슷한 작업사례를 보실 수 있습니다."),
+         crumbs=[(p, "품목별 안내")], og_sub="장롱·침대·냉장고·에어컨·피아노 등 품목별 안내")
     for it in ITEMS:
         p = f"items/{it['slug']}.html"
         s = SVC[it["service"]]
@@ -1003,22 +1039,22 @@ def build_items():
         intro = "".join(f"<p>{e(t)}</p>" for t in it["intro"])
         pts = "".join(f"<li>{e(t)}</li>" for t in it["points"])
         others = "".join(f'<li><a href="{o["slug"]}.html">{e(o["name"])}</a></li>' for o in ITEMS if o is not it)
-        summary = f"강산자원은 서울·경기·인천에서 {it['name']} 수거를 합니다. {it['sub']}. 사진을 보내주시면 무료로 견적을 안내합니다."
+        summary = f"강산자원은 서울·경기·인천에서 {it['name']}을(를) 1층까지 내려드립니다. {it['sub']}. 사진을 보내주시면 무료로 견적을 안내합니다."
         idt = details_where(lambda d: it["slug"] in d["items"])
         iq = QA.ITEM_QA.get(it["slug"])
         col = CL.TOPIC.get(it["slug"])
         compare = f"""<h2>버리는 방법 비교</h2>
       <div class="table-wrap"><table>
-        <thead><tr><th scope="col"></th><th scope="col">구청 대형폐기물 신고</th><th scope="col">강산자원 방문 수거</th></tr></thead>
+        <thead><tr><th scope="col"></th><th scope="col">구청 대형폐기물 신고</th><th scope="col">강산자원 내려드림</th></tr></thead>
         <tbody>
           <tr><th scope="row">신고·스티커</th><td>직접 신고하고 수수료 납부</td><td>필요 없음</td></tr>
-          <tr><th scope="row">집 밖까지 운반</th><td>직접 옮겨야 함</td><td>집 안에서 꺼내 반출</td></tr>
+          <tr><th scope="row">집 밖까지 옮기기</th><td>직접 옮겨야 함</td><td>집 안에서 꺼내 1층까지 내려드림</td></tr>
           <tr><th scope="row">분해</th><td>직접 분해</td><td>필요하면 현장에서 분해</td></tr>
           <tr><th scope="row">다른 짐 함께</th><td>품목별로 각각 신고</td><td>가구·가전·잔짐 한 번에</td></tr>
           <tr><th scope="row">비용</th><td>품목별 수수료(지자체마다 다름)</td><td>사진 보고 견적 (견적은 무료)</td></tr>
         </tbody></table></div>
-      <p>한두 개를 직접 옮길 수 있다면 구청 신고가 경제적입니다. 무겁거나 양이 많고, 일정이 정해져 있다면 방문 수거가 편합니다.</p>"""
-        if iq:  # 질문형으로 다시 쓴 품목: 비교·비용은 칼럼이 맡고, 품목 페이지는 수거 범위에 집중
+      <p>한두 개를 직접 옮길 수 있다면 구청 신고가 경제적입니다. 무겁거나 계단이 좁아 직접 내리기 어렵다면 강산자원이 1층까지 내려드립니다. 내려드린 뒤 배출 방법은 상담 때 안내합니다.</p>"""
+        if iq:  # 질문형으로 다시 쓴 품목: 비교·비용은 칼럼이 맡고, 품목 페이지는 작업 범위에 집중
             compare = qa_sections(p, iq["sections"], []) + (f'<p>버리는 방법 비교, 비용이 달라지는 조건, 엘리베이터에 안 들어갈 때 확인하는 방법은 <a href="../column/{col["slug"]}.html">{e(col["title"])}</a>에 정리했습니다.</p>' if col else "")
         main = f"""
 <section class="section">
@@ -1026,7 +1062,7 @@ def build_items():
     <article class="prose">
       <p class="note"><strong>요약</strong> {e(iq["lead"] if iq else summary)}</p>
       {intro}
-      {"" if iq else f'<h2>강산자원이 처리하는 범위</h2><ul class="checklist">{pts}</ul>'}
+      {"" if iq else f'<h2>강산자원이 하는 일</h2><ul class="checklist">{pts}</ul>'}
       {compare}
       <h2>자주 묻는 질문</h2>
       {faq_html(it['faqs'], open_first=True)}
@@ -1035,14 +1071,14 @@ def build_items():
     <aside class="aside">{cta_card()}<div class="note"><strong>다른 품목</strong><ul>{others}</ul></div></aside>
   </div>
 </section>
-{f'''<section class="section band"><div class="wrap"><div class="section-head"><h2>{e(it['name'])} 수거 현장 상세 기록</h2></div><div class="cases">{"".join(detail_card(p, d) for d in idt)}</div></div></section>''' if idt else ''}
+{f'''<section class="section band"><div class="wrap"><div class="section-head"><h2>{e(it['name'])} 현장 상세 기록</h2></div><div class="cases">{"".join(detail_card(p, d) for d in idt)}</div></div></section>''' if idt else ''}
 {f'''<section class="section band"><div class="wrap"><div class="section-head"><h2>관련 작업사례</h2></div><div class="cases">{"".join(case_card(p, c) for c in cs)}</div></div></section>''' if cs else ''}
 """
-        ititle = (iq or {}).get("title") or f"{it['name']} 수거"
-        page(p, ititle, f"{ititle}, 30년 경력 강산자원. {it['sub']}. 서울·경기·인천 방문 수거, 사진 무료 견적",
-             main, head(ititle, it["sub"], "품목별 수거"),
-             crumbs=[("items/index.html", "품목별 수거"), (p, it["name"])],
-             ld=[{"@type": "Service", "name": f"{it['name']} 수거", "provider": {"@id": url("index.html") + "#business"}, "description": " ".join(it["intro"])}, faq_ld(it["faqs"])],
+        ititle = (iq or {}).get("title") or f"{it['name']} 내려드림"
+        page(p, ititle, f"{ititle}, 30년 경력 강산자원. {it['sub']}. 서울·경기·인천 1층까지 내려드림, 사진 무료 견적",
+             main, head(ititle, it["sub"], "품목별 안내"),
+             crumbs=[("items/index.html", "품목별 안내"), (p, it["name"])],
+             ld=[{"@type": "Service", "name": f"{it['name']} 내려드림", "provider": {"@id": url("index.html") + "#business"}, "description": " ".join(it["intro"])}, faq_ld(it["faqs"])],
              og_photo=case_photo(cs[0]["id"], "before") if cs else None, og_sub=it["sub"], images=case_imgs(cs))
 
 
@@ -1070,7 +1106,7 @@ def build_cases():
 </div></section>"""
     gallery = [{"@type": "ImageObject", "contentUrl": url(f"images/cases/{c['id']}-{side}.jpg"), "name": f"{c['title']} {lab}", "description": c["desc"]}
                for c in CASES for side, lab in (("before", "작업 전"), ("after", "작업 후"))]
-    page(p, "작업사례", f"강산자원이 직접 작업한 폐기물 수거·쓰레기집 정리·철거 현장 {len(CASES)}곳의 작업 전후 사진. 이사 폐기물, 유품정리, 가구·가전 수거, 사무실, 폐업 정리.",
+    page(p, "작업사례", f"강산자원이 작업한 현장 {len(CASES)}곳의 작업 전후 사진. 가구·가전 내려드림, 이사 짐, 유품정리, 쓰레기집 정리, 사무실, 철거.",
          main, head("작업사례", f"강산자원이 직접 작업한 현장의 작업 전과 후 사진 {len(CASES)}건입니다."),
          crumbs=[(p, "작업사례")], ld=[{"@type": "ImageGallery", "name": "강산자원 작업사례", "image": gallery}],
          og_photo=case_photo("g000"), og_sub=f"직접 작업한 현장 전후 사진 {len(CASES)}건", images=case_imgs(CASES))
@@ -1105,7 +1141,7 @@ def build_case_details():
             f'<figcaption><b class="badge badge-{x["kind"]}">{KIND_LABEL[x["kind"]]}</b> {e(x["cap"])}</figcaption></figure>'
             for i, x in enumerate(ph))
         links = [(f"services/{sid}.html", SVC[sid]["name"], SVC_SUB[sid]) for sid in d["services"] if sid in SVC]
-        links += [(f"items/{i['slug']}.html", i["name"] + " 수거", i["sub"]) for i in ITEMS if i["slug"] in d["items"]]
+        links += [(f"items/{i['slug']}.html", i["name"] + " 내려드림", i["sub"]) for i in ITEMS if i["slug"] in d["items"]]
         links += [(f"column/{CL.TOPIC[c]['slug']}.html", CL.TOPIC[c]["title"], "칼럼") for c in d["columns"] if c in CL.TOPIC]
         if r:
             links.append((f"local/{r['slug']}.html", f"{r['name']} 폐기물·철거 안내", "지역 안내"))
@@ -1129,7 +1165,7 @@ def build_case_details():
       <ul class="checklist">{"".join(f"<li>{e(x)}</li>" for x in d['scope'])}</ul>
       {f'<p class="muted">{e(d["scope_note"])}</p>' if d['scope_note'] else ''}
       <h2>사진으로 보는 작업 전·과정·후</h2>
-      <p class="muted">블로그에 올린 원본 사진입니다. 좌우로 붙어 있던 사진은 한 장씩 나눴고, 글자를 넣은 대표 이미지나 예상 이미지는 싣지 않았습니다.</p>
+      <p class="muted">블로그에 올린 원본 사진입니다. 좌우로 붙어 있던 사진은 한 장씩 나눴고, 글자를 넣은 대표 이미지나 예상 이미지는 넣지 않았습니다.</p>
       <div class="dphotos">{figs}</div>
       <h2>비슷한 상황이라면 이렇게 준비해 주세요</h2>
       <ul class="checklist">{"".join(f"<li>{e(x)}</li>" for x in d['prepare'])}</ul>
@@ -1168,9 +1204,9 @@ def build_videos():
 </div></section>"""
     vids = [{"@type": "VideoObject" if v["video"] else "ImageObject", "name": insta_title(v), "description": v["caption"][:300],
              "thumbnailUrl": url(f"images/insta/{v['code']}.jpg"), "uploadDate": v["date"], "contentUrl": v["url"], "embedUrl": v["url"] + "embed/"} for v in INSTA]
-    page(p, "현장 영상", "강산자원 인스타그램 현장 영상: 유품정리, 이사 폐기물, 가구·가전 수거, 에어컨 철거 등 실제 작업 모습.",
+    page(p, "현장 영상", "강산자원 인스타그램 현장 영상: 유품정리, 이사 짐 정리, 가구·가전 내려드림, 철거 등 실제 작업 모습.",
          main, head("현장 영상", "실제 작업 현장을 영상으로 보여드립니다."), crumbs=[(p, "현장 영상")], ld=vids,
-         og_photo=os.path.join(DATA, "insta_img", INSTA[0]["code"] + ".jpg"), og_sub="유품정리·이사 폐기물·가구 수거 현장 영상")
+         og_photo=os.path.join(DATA, "insta_img", INSTA[0]["code"] + ".jpg"), og_sub="유품정리·이사 짐·가구 내려드림 현장 영상")
 
 
 def insta_title(v):
@@ -1202,7 +1238,7 @@ def build_daily():
   <div class="prose" style="margin-bottom:28px"><p>강산자원 네이버 블로그({", ".join(f'<a href="https://blog.naver.com/{bid}" target="_blank" rel="noopener">blog.naver.com/{bid}</a>' for bid, _ in BLOGS)})에 올라오는 현장 이야기입니다. 블로그에 새 글이 올라오면 이 페이지에도 자동으로 추가됩니다.</p></div>
   <div class="posts">{cards or '<p>아직 글이 없습니다.</p>'}</div>
 </div></section>"""
-    page(p, "강산 일상", "강산자원 블로그 현장 이야기. 가정집 폐기물, 이사 후 짐 정리, 유품정리, 집게차 수거 현장 기록.",
+    page(p, "강산 일상", "강산자원 블로그 현장 이야기.",
          main, head("강산 일상", "매일 다니는 현장의 이야기를 블로그와 함께 전합니다."), crumbs=[(p, "강산 일상")],
          og_photo=os.path.join(DATA, "blog_img", blog_thumb(BLOG[0]).split("/")[-1]) if BLOG and blog_thumb(BLOG[0]) else None,
          og_sub="블로그와 연동되는 강산자원 현장 이야기",
@@ -1243,33 +1279,33 @@ def build_estimate():
         <div class="proc-cols">{col("고객이 준비할 것", d["customer"])}{col("강산자원이 확인·수행할 것", d["company"])}{col("다음 단계 전에 합의할 것", d["agree"])}</div></li>'''
         for i, d in enumerate(C.PROCESS_DETAIL))
     by_svc = "".join(f'<div><h3>{e(t)}</h3><p>{e(d)} <a href="services/{sl}.html">{e(SVC[sl]["name"])} 안내 →</a></p></div>' for t, sl, d in C.PROCESS_BY_SERVICE)
-    ex = [CDT.DETAIL[x] for x in ("seocho-move-out-empty-house", "eunpyeong-after-move-furniture", "nowon-estate-cleanup", "gangnam-office-interior-waste")]
+    ex = [CDT.DETAIL[x] for x in ("seocho-move-out-empty-house", "seongbuk-anam-bed-frame", "nowon-estate-cleanup", "gangnam-office-interior-waste")]
     ex_note = [
         ("분해·반출 단계", "큰 가구를 분해하고 사다리차로 내린 서초동 이사 전 정리"),
-        ("견적·범위 합의 단계", "이삿짐센터의 1층 운반과 수거·처리 범위를 나눈 은평구 증산동 사례"),
+        ("견적·범위 합의 단계", "1층까지 직접 내리기 어려운 침대 프레임을 분리해 내려드린 성북구 안암동 사례"),
         ("작업 전 준비 단계", "가족이 보관할 물건 기준을 먼저 정한 노원구 중계동 유품정리"),
-        ("반출 동선 확인", "1층으로 모은 자재를 차량에 실은 강남구 사무실 인테리어 폐기물"),
+        ("내리는 동선 확인", "공사 자재를 1층 출입구 앞까지 내려드린 강남구 사무실 인테리어 폐기물"),
     ]
     ex_links = "".join(f'<li><b>{e(t)}</b>: <a href="cases/detail/{d["slug"]}.html">{e(n)}</a></li>' for (t, n), d in zip(ex_note, ex))
     main = f"""
 <section class="section">
   <div class="wrap split">
     <article class="prose">
-      <p class="note"><strong>요약</strong> 강산자원은 작업마다 물량과 현장 조건이 달라 고정 가격표를 두지 않습니다. 현장 사진을 카카오톡 채널 ‘강산자원’ 또는 문자(010-6338-4016)로 보내주시면 견적을 무료로 안내합니다. 무료인 것은 견적이며, 수거·처리 비용은 견적에서 포함 범위와 함께 안내합니다. 견적을 받았다고 꼭 맡기셔야 하는 것은 아닙니다. 상담은 24시간 받고, 작업은 예약한 날짜와 시간에 진행합니다.</p>
+      <p class="note"><strong>요약</strong> 강산자원은 작업마다 물량과 현장 조건이 달라 고정 가격표를 두지 않습니다. 현장 사진을 카카오톡 채널 ‘강산자원’ 또는 문자(010-6338-4016)로 보내주시면 견적을 무료로 안내합니다. 무료인 것은 견적이며, 작업 비용은 견적에서 포함 범위와 함께 안내합니다. 작업은 1층(건물 밖 정한 장소)까지 내려드리는 데까지이고, 내려드린 뒤 배출 방법은 상담 때 안내합니다. 견적을 받았다고 꼭 맡기셔야 하는 것은 아닙니다. 상담은 24시간 받고, 작업은 예약한 날짜와 시간에 진행합니다.</p>
       <h2 id="process">진행 절차 7단계</h2>
       <p>단계마다 고객이 준비할 것, 강산자원이 확인하거나 하는 일, 다음 단계로 가기 전에 함께 정할 것을 나눠 적었습니다.</p>
       <ol class="proc">{steps}</ol>
       <h2>서비스별로 더 확인할 것</h2>
       <div class="why why-2">{by_svc}</div>
-      <h2 id="scope">수거에 포함되는 일과 다른 작업</h2>
-      <p>단순 수거와 철거, 청소·소독, 마감 복구는 서로 다른 작업입니다. 기본 범위에 들어가지 않는 작업은 견적 때 따로 말씀해 주세요.</p>
+      <h2 id="scope">작업에 포함되는 일과 다른 작업</h2>
+      <p>1층까지 내려드리는 작업과 철거, 청소·소독, 마감 복구는 서로 다른 작업입니다. 기본 범위에 들어가지 않는 작업은 견적 때 따로 말씀해 주세요.</p>
       <div class="table-wrap"><table><thead><tr><th scope="col">작업</th><th scope="col">범위</th><th scope="col">설명</th></tr></thead><tbody>{scope}</tbody></table></div>
       <h2 id="checklist">작업 전 체크리스트</h2>
       <h3>사진은 이렇게 찍어주세요</h3>
       <div class="why why-2">{guide}</div>
       <h3>사진과 함께 알려주실 내용</h3>
       <ul class="checklist">
-        <li>동네 이름 (동까지만 알려주셔도 됩니다)</li><li>층수와 엘리베이터 유무</li><li>건물 앞 차량 정차 가능 여부</li>
+        <li>동네 이름 (동까지만 알려주셔도 됩니다)</li><li>층수와 엘리베이터 유무</li><li>1층에 짐을 내려놓을 장소</li>
         <li>희망 날짜와 시간대</li><li>철거가 필요한 부분 (싱크대, 타일, 칸막이 등)</li><li>석면, 폐유, 화학 약품 등 지정폐기물이 있는지</li>
         <li>남길 물건, 귀중품, 개인정보가 담긴 기기를 따로 두었는지</li>
       </ul>
@@ -1280,14 +1316,14 @@ def build_estimate():
       <h2>단계별로 참고할 실제 사례</h2>
       <ul class="checklist">{ex_links}</ul>
     </article>
-    <aside class="aside">{cta_card()}<div class="note"><strong>이 페이지 바로가기</strong><ul><li><a href="#process">진행 절차 7단계</a></li><li><a href="#scope">수거 범위와 다른 작업</a></li><li><a href="#checklist">작업 전 체크리스트</a></li><li><a href="#cost">비용 기준</a></li></ul></div></aside>
+    <aside class="aside">{cta_card()}<div class="note"><strong>이 페이지 바로가기</strong><ul><li><a href="#process">진행 절차 7단계</a></li><li><a href="#scope">작업 범위와 다른 작업</a></li><li><a href="#checklist">작업 전 체크리스트</a></li><li><a href="#cost">비용 기준</a></li></ul></div></aside>
   </div>
 </section>
 <section class="section band"><div class="wrap"><div class="section-head"><h2>현장 상세 기록</h2></div><div class="cases">{"".join(detail_card(p, d) for d in ex[:3])}</div></div></section>"""
-    page(p, "무료견적·작업 절차", "사진으로 받는 무료 견적과 7단계 작업 절차. 단계별 준비사항, 수거 범위와 별도 작업, 비용이 정해지는 기준을 안내합니다.",
+    page(p, "무료견적·작업 절차", "사진으로 받는 무료 견적과 7단계 작업 절차. 단계별 준비사항, 작업 범위와 별도 작업, 비용이 정해지는 기준을 안내합니다.",
          main, head("무료견적·작업 절차", "상담부터 마무리 확인까지 7단계로, 단계마다 준비할 것과 함께 정할 것을 정리했습니다."),
          crumbs=[(p, "무료견적·작업 절차")], og_sub="7단계 절차 · 사진 무료 견적",
-         ld=[{"@type": "HowTo", "name": "강산자원 폐기물 수거 진행 절차", "description": "상담부터 마무리 확인과 정산까지 7단계",
+         ld=[{"@type": "HowTo", "name": "강산자원 작업 진행 절차", "description": "상담부터 마무리 확인과 정산까지 7단계",
               "step": [{"@type": "HowToStep", "position": i + 1, "name": d["step"], "text": d["desc"], "url": url(p) + f"#step{i + 1}"} for i, d in enumerate(C.PROCESS_DETAIL)]}])
 
 
@@ -1299,12 +1335,12 @@ def build_about():
 <section class="section">
   <div class="wrap split">
     <article class="prose">
-      <p class="note"><strong>요약</strong> 강산자원은 서울·경기·인천 수도권에서 일하는 폐기물 처리·실내철거 업체로, 30년 동안 운영하며 10,000건 이상의 현장을 처리했습니다(자체 집계, 2026년 11월 기준). 가정집·사무실·상가의 폐기물 수거와 실내철거, 철거 후 남은 짐 정리를 한 번에 상담합니다.</p>
+      <p class="note"><strong>요약</strong> 강산자원은 서울·경기·인천 수도권에서 일하는 폐기물 내려드림·실내철거 업체로, 30년 동안 운영하며 10,000건 이상의 현장을 맡았습니다(자체 집계, 2026년 11월 기준). 가정집·사무실·상가의 가구·생활짐 내려드림과 실내철거, 철거 후 잔재 내려드림을 한 번에 상담합니다.</p>
       <h2>하는 일</h2>
-      <p>장롱·침대·소파 같은 대형폐기물과 가전 수거, 이사 전후 남은 짐 정리, 유품정리, 쓰레기집 정리, 사무실 집기 철수, 상가 폐업 정리와 원상복구 철거, 실내철거와 공사 잔재 반출을 합니다. 소량부터 대량까지 물량에 맞춰 견적을 안내합니다.</p>
+      <p>장롱·침대·소파 같은 가구와 가전, 이사 전후 남은 짐을 분해해 1층까지 내려드립니다. 유품정리, 쓰레기집 정리, 사무실 집기 철수, 상가 폐업 정리와 원상복구 철거, 실내철거를 하고, 철거 후 나온 잔재도 1층까지 내려드립니다. 소량부터 대량까지 물량에 맞춰 견적을 안내합니다.</p>
       <h2>하지 않는 일</h2>
-      <ul class="checklist"><li>물건 매입은 하지 않습니다. 수거와 처리만 합니다.</li><li>석면, 폐유, 화학 약품 같은 지정폐기물은 허가 업체가 처리해야 하므로 처리 방법을 안내합니다.</li><li>입주 청소·소독과 도배·장판 같은 마감 공사는 기본 범위에 들어가지 않습니다.</li></ul>
-      <h2>운영 기간과 처리 실적</h2>
+      <ul class="checklist"><li>1층(건물 밖 정한 장소)까지 내려드리는 데까지가 작업 범위입니다. 내려드린 뒤 배출 방법(구청 대형폐기물 신고 등)은 상담 때 안내합니다.</li><li>물건 매입은 하지 않습니다.</li><li>석면, 폐유, 화학 약품 같은 지정폐기물은 허가 업체가 다뤄야 하므로 따로 안내합니다.</li><li>입주 청소·소독과 도배·장판 같은 마감 공사는 기본 범위에 들어가지 않습니다.</li></ul>
+      <h2>운영 기간과 현장 실적</h2>
       <p>강산자원은 30년 동안 운영해 온 회사입니다. 그동안 처리한 현장은 10,000건 이상입니다. 이 숫자는 강산자원이 자체 집계한 누적 건수이며, 2026년 11월에 대표가 확인한 기준입니다.</p>
       <h2>결제</h2>
       <p>현금이나 계좌이체로 결제합니다. 사업장은 계산서 발행도 가능합니다. 결제 시점은 견적 상담 때 안내합니다.</p>
@@ -1319,16 +1355,16 @@ def build_about():
   </div>
 </section>
 <section class="section band"><div class="wrap"><div class="section-head"><h2>강산자원에 맡기는 이유</h2></div><div class="why">{why}</div></div></section>
-<section class="section" id="vehicles"><div class="wrap"><div class="section-head"><h2>보유 차량</h2><p>1톤 트럭 2대와 집게차를 보유하고 있으며, 물량과 반출 조건을 확인한 뒤 차량을 정합니다. 사다리차가 필요한 현장은 견적 때 함께 안내합니다.</p></div><div class="vehicles">{vehicles}</div></div></section>"""
-    page(p, "회사소개", "강산자원은 수도권 폐기물 처리·실내철거 업체입니다. 운영 30년, 누적 10,000건 이상. 하는 일, 결제, 보유 차량.",
-         main, head("회사소개", "폐기물 처리·실내철거 30년. 하는 일과 하지 않는 일, 일하는 방식을 소개합니다."),
+"""
+    page(p, "회사소개", "강산자원은 수도권 폐기물 내려드림·실내철거 업체입니다. 운영 30년, 누적 10,000건 이상. 하는 일과 하지 않는 일, 결제.",
+         main, head("회사소개", "폐기물 내려드림·실내철거 30년. 하는 일과 하지 않는 일, 일하는 방식을 소개합니다."),
          crumbs=[(p, "회사소개")], ld=[{"@type": "AboutPage", "name": "강산자원 회사소개", "url": url(p)}], og_sub="30년 경력 · 사진 무료 견적 · 100% 예약제")
 
 
 def build_areas():
     p = "areas/index.html"
     page(p, "출동지역", "강산자원은 서울 25개 구, 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다. 작업은 예약제.",
-         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [("areas/" + k + ".html", a["full"] + " 폐기물 처리", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
+         f'<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>서울 25개 구 전체와 경기도, 인천광역시 등 수도권 전 지역으로 출동합니다.</p></div>{link_cards(p, [("areas/" + k + ".html", a["full"] + " 폐기물 내려드림·철거", a["lead"]) for k, a in C.AREAS.items()])}</div></section>',
          head("출동지역", "서울·경기·인천 수도권 전 지역으로 출동합니다."), crumbs=[(p, "출동지역")], og_sub="서울 25개 구 · 경기 · 인천 전 지역")
     for k, a in C.AREAS.items():
         p = f"areas/{k}.html"
@@ -1336,24 +1372,24 @@ def build_areas():
         chips = "".join(f"<li>{e(d)}</li>" for d in a["districts"])
         svc = "".join(f'<li><a href="../services/{s["slug"]}.html">{e(a["name"])} {e(s["name"])}</a></li>' for s in SERVICES)
         main = f"""<section class="section"><div class="wrap split"><article class="prose">
-      <p class="note"><strong>요약</strong> 강산자원은 {e(a['full'])} 전 지역에서 대형폐기물 수거, 이사 폐기물, 유품정리, 쓰레기집 정리·청소, 사무실·상가 원상복구, 실내철거를 합니다. 사진을 보내주시면 무료로 견적을 드립니다.</p>
+      <p class="note"><strong>요약</strong> 강산자원은 {e(a['full'])} 전 지역에서 가구·가전·생활짐을 1층까지 내려드리고, 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거, 실내철거를 합니다. 사진을 보내주시면 무료로 견적을 드립니다.</p>
       <p>{e(a['lead'])}</p>{body}
       <h2>{e(a['full'])} 출동 지역</h2><ul class="chips">{chips}</ul>
       <p class="muted">목록에 없는 지역도 출동합니다. 주소를 알려주시면 일정을 안내해 드립니다.</p>
       <h2>{e(a['name'])}에서 맡기실 수 있는 일</h2><ul>{svc}</ul>
     </article><aside class="aside">{cta_card()}</aside></div></section>"""
-        page(p, f"{a['full']} 폐기물 처리", f"{a['full']} 대형폐기물·폐가구 수거, 이사 폐기물, 유품정리, 쓰레기집 정리, 상가 원상복구, 실내철거. {', '.join(a['districts'][:8])} 등 {a['name']} 전 지역 출동. 강산자원 010-6338-4016.",
-             main, head(f"{a['full']} 폐기물 처리", a["lead"]), crumbs=[("areas/index.html", "출동지역"), (p, a["full"])],
-             ld=[{"@type": "Service", "name": f"{a['full']} 폐기물 처리", "provider": {"@id": url("index.html") + "#business"},
+        page(p, f"{a['full']} 폐기물 내려드림·철거", f"{a['full']} 가구·가전·이삿짐 1층까지 내려드림, 유품정리, 쓰레기집 정리, 상가 원상복구, 실내철거. {', '.join(a['districts'][:8])} 등 {a['name']} 전 지역 출동. 강산자원 010-6338-4016.",
+             main, head(f"{a['full']} 폐기물 내려드림·철거", a["lead"]), crumbs=[("areas/index.html", "출동지역"), (p, a["full"])],
+             ld=[{"@type": "Service", "name": f"{a['full']} 폐기물 내려드림·철거", "provider": {"@id": url("index.html") + "#business"},
                   "areaServed": {"@type": "AdministrativeArea", "name": a["full"], "containsPlace": [{"@type": "Place", "name": d} for d in a["districts"]]}}],
              og_sub=", ".join(a["districts"][:6]) + " 등 전 지역")
 
 
 def build_guides():
     p = "guide/index.html"
-    page(p, "폐기물 처리 가이드", "대형폐기물 버리는 법, 매트리스·폐가전 처리, 이사 폐기물 체크리스트, 쓰레기집 정리, 상가 원상복구, 유품정리 순서 등 30년 경력 강산자원이 정리한 안내.",
+    page(p, "폐기물 배출 가이드", "대형폐기물 버리는 법, 매트리스·폐가전 처리, 이사 폐기물 체크리스트, 쓰레기집 정리, 상가 원상복구, 유품정리 순서 등 30년 경력 강산자원이 정리한 안내.",
          f'<section class="section"><div class="wrap">{link_cards(p, [("guide/" + g["slug"] + ".html", g["title"], g["desc"]) for g in GUIDES])}</div></section>',
-         head("폐기물 처리 가이드", "30년 동안 현장에서 가장 많이 받은 질문을 정리했습니다."), crumbs=[(p, "폐기물 가이드")], og_sub="현장 경험으로 쓴 폐기물 처리 안내")
+         head("폐기물 배출 가이드", "30년 동안 현장에서 가장 많이 받은 질문을 정리했습니다."), crumbs=[(p, "폐기물 가이드")], og_sub="현장 경험으로 쓴 폐기물 배출 안내")
     for g in GUIDES:
         p = f"guide/{g['slug']}.html"
         secs = "".join(f"<h2>{e(h)}</h2>" + "".join(f"<p>{e(t)}</p>" for t in ps) for h, ps in g["sections"])
@@ -1364,11 +1400,11 @@ def build_guides():
       <h2>관련 서비스</h2>{link_cards(p, [(f"services/{s}.html", SVC[s]["name"], SVC[s]["short"]) for s in g["related"]])}
     </article><aside class="aside">{cta_card()}</aside></div></section>
 {f'''<section class="section band"><div class="wrap"><div class="section-head"><h2>관련 작업사례</h2></div><div class="cases">{"".join(case_card(p, c) for c in cs)}</div></div></section>''' if cs else ''}"""
-        page(p, g["title"], g["desc"], main, head(g["title"], g["desc"], "폐기물 처리 가이드"),
+        page(p, g["title"], g["desc"], main, head(g["title"], g["desc"], "폐기물 배출 가이드"),
              crumbs=[("guide/index.html", "폐기물 가이드"), (p, g["title"])],
              ld=[{"@type": "Article", "headline": g["title"], "description": g["desc"], "inLanguage": "ko-KR", "image": url("images/og/" + p.replace("/", "-").replace(".html", "") + ".jpg"),
                   "author": {"@id": url("index.html") + "#business"}, "publisher": {"@id": url("index.html") + "#business"}, "dateModified": TODAY, "mainEntityOfPage": url(p)}],
-             og_photo=case_photo(cs[0]["id"], "before") if cs else None, og_sub="강산자원 폐기물 처리 가이드")
+             og_photo=case_photo(cs[0]["id"], "before") if cs else None, og_sub="강산자원 폐기물 배출 가이드")
 
 
 # ---------------------------------------------------------------- 전후 사진 묶음 (칼럼 갤러리, 검색 이미지용)
@@ -1442,11 +1478,7 @@ def build_columns(topic_kws):
         cs = pick_cases(t["cats"], t["slug"], 6, words=words)
         counts = {}
         secs = ""
-        for i, g in enumerate(groups):
-            kind = CL.split_kw(g[0], t["noun"])[1]
-            n = counts.get(kind, 0); counts[kind] = n + 1
-            h, txt = CL.topic_section(t, g[0], n)
-            secs += f'<section class="kw-sec" id="k{i + 1}"><h3>{e(h)}</h3><p>{e(txt)}</p></section>'
+        # 2026-11-10: 키워드별 자동 문단(수거·처리 표현이 많음)은 싣지 않는다
         pts = "".join(f"<li>{e(x)}</li>" for x in t["points"])
         svc = SVC[t["service"]]
         related = [x for x in CL.TOPIC.values() if x["group"] == t["group"] and x is not t][:6]
@@ -1469,14 +1501,14 @@ def build_columns(topic_kws):
       {qa_sections(p, q['sections'], case_html)}
       <h2>자주 묻는 질문</h2>
       {faq_html(faqs, open_first=True)}
-      <p>{f'맡기실 때의 수거 범위와 진행은 <a href="../items/{t["slug"]}.html">품목별 수거: {e(ITEM_BY_SLUG[t["slug"]]["name"])}</a>, ' if t["slug"] in ITEM_BY_SLUG else ''}서비스 전체 안내는 <a href="../services/{svc['slug']}.html">{e(svc['name'])}</a>, 단계별 준비와 비용 기준은 <a href="../estimate.html">무료견적·작업 절차</a>에서 보실 수 있습니다.</p>
+      <p>{f'맡기실 때의 작업 범위와 진행은 <a href="../items/{t["slug"]}.html">품목별 안내: {e(ITEM_BY_SLUG[t["slug"]]["name"])}</a>, ' if t["slug"] in ITEM_BY_SLUG else ''}서비스 전체 안내는 <a href="../services/{svc['slug']}.html">{e(svc['name'])}</a>, 단계별 준비와 비용 기준은 <a href="../estimate.html">무료견적·작업 절차</a>에서 보실 수 있습니다.</p>
     </article>
     <aside class="aside">{cta_card()}<div class="note"><strong>같은 분류 칼럼</strong><ul>{"".join(f'<li><a href="{x["slug"]}.html">{e(x["title"])}</a></li>' for x in related)}</ul></div></aside>
   </div>
 </section>"""
             imgs = [f"images/pair/{c['id']}.jpg" for c in cs[:6]] + case_imgs(cs[:6]) + [x["src"] for d in qcases for x in DETAIL_PHOTOS[d["slug"]]]
             ld = [{"@type": "Article", "headline": q["title"], "description": q["lead"], "inLanguage": "ko-KR",
-                   "keywords": ", ".join(kws), "image": [url(x) for x in imgs[:6]],
+                   "image": [url(x) for x in imgs[:6]],
                    "author": {"@id": url("index.html") + "#business"}, "publisher": {"@id": url("index.html") + "#business"},
                    "dateModified": TODAY, "mainEntityOfPage": url(p)}, faq_ld(faqs)]
             page(p, q["title"], q["lead"], main, head(q["title"], q["lead"], dict(CL.CD.GROUPS)[t["group"]]),
@@ -1495,9 +1527,8 @@ def build_columns(topic_kws):
   <div class="wrap split">
     <article class="prose">
       {"".join(f"<p>{e(x)}</p>" for x in t['intro'])}
-      <h2>{e(t['noun'])} 자주 찾는 질문별 안내</h2>
       {secs}
-      <h2>강산자원은 이렇게 처리합니다</h2>
+      <h2>강산자원이 하는 일</h2>
       <ul class="checklist">{pts}</ul>
       <h2>직접 버릴 때 알아둘 점</h2>
       <p>{e(t['gov'])}</p>
@@ -1515,7 +1546,7 @@ def build_columns(topic_kws):
 {det_html}"""
         imgs = [f"images/pair/{c['id']}.jpg" for c in cs] + case_imgs(cs)
         ld = [{"@type": "Article", "headline": t["title"], "description": t["lead"], "inLanguage": "ko-KR",
-               "keywords": ", ".join(kws), "image": [url(x) for x in imgs[:6]],
+               "image": [url(x) for x in imgs[:6]],
                "author": {"@id": url("index.html") + "#business"}, "publisher": {"@id": url("index.html") + "#business"},
                "dateModified": TODAY, "mainEntityOfPage": url(p)}, faq_ld(t["faqs"])]
         page(p, t["title"], f"{t['lead']} 30년 경력 강산자원, 사진 무료 견적.", main,
@@ -1527,25 +1558,25 @@ def build_columns(topic_kws):
 # ---------------------------------------------------------------- 지역별 안내
 def local_title(r, items):
     rests = {it["rest"] for it in items}
-    tail = "대형폐기물·폐기물 처리"
+    tail = "폐기물 내려드림"
     if any("철거" in x for x in rests):
-        tail = "대형폐기물·폐기물·철거"
+        tail = "폐기물 내려드림·철거"
     return f"{r['name']} {tail}"
 
 
 # 지역 키워드 분류 → ⑤ 관련 품목·서비스 카드 (제목, 연결 페이지, 설명)
 REGION_KIND_LINK = {
-    "bulky": ("대형폐기물 수거", "services/household.html", "장롱·침대·소파 등 큰 가구를 집 안에서 꺼내 수거"),
-    "furniture": ("폐가구 수거", "column/furniture.html", "가구 한두 점부터 집 전체 가구까지"),
-    "appliance": ("폐가전 수거", "services/appliances.html", "냉장고·세탁기·에어컨, 업소용 가전"),
+    "bulky": ("대형 짐 내려드림", "services/household.html", "장롱·침대·소파 등 큰 가구를 분해해 1층까지"),
+    "furniture": ("가구 내려드림", "column/furniture.html", "가구 한두 점부터 집 전체 가구까지"),
+    "appliance": ("가전 내려드림", "services/appliances.html", "냉장고·세탁기·에어컨, 업소용 가전"),
     "household": ("생활폐기물 정리", "column/household-waste.html", "종량제·재활용·대형폐기물이 섞인 생활 짐"),
-    "general": ("폐기물 처리·수거", "services/index.html", "가정·사무실·상가·공사 현장 폐기물"),
-    "report": ("대형폐기물 신고 배출", "guide/bulky-waste-disposal.html", "직접 신고해 버리는 방법과 방문 수거 비교"),
+    "general": ("폐기물 내려드림", "services/index.html", "가정·사무실·상가·공사 현장 짐을 1층까지"),
+    "report": ("대형폐기물 신고 배출", "guide/bulky-waste-disposal.html", "직접 신고해 버리는 방법"),
     "moving": ("이사 폐기물", "services/moving.html", "이사 전후 남은 가구·가전·생활짐"),
     "estate": ("유품정리·집정리", "services/estate.html", "가족과 보관 기준을 정한 뒤 집 안 정리"),
     "trash": ("쓰레기집 정리", "services/trash-house.html", "쌓인 쓰레기와 짐 분류·반출"),
     "office": ("사무실 정리", "services/office.html", "책상·파티션·캐비닛 철수, 이전·폐업 정리"),
-    "store": ("상가 폐업 정리", "services/store.html", "집기 수거부터 원상복구 철거까지"),
+    "store": ("상가 폐업 정리", "services/store.html", "집기·인테리어 철거와 원상복구"),
     "demolition": ("철거", "services/demolition.html", "실내철거·부분철거와 잔재 반출"),
     "company": ("폐기물 업체 고르는 법", "guide/choosing-waste-company.html", "견적 포함 범위와 처리 과정 확인"),
 }
@@ -1573,7 +1604,7 @@ def build_locals(region_kws):
     for area in ("서울", "경기", "인천"):
         rs = [r for r in CL.REGION.values() if r["area"] == area]
         blocks += f'<h2 style="margin-top:32px">{area}</h2>' + link_cards(p, [("local/" + r["slug"] + ".html", local_title(r, region_kws[r["slug"]]), ", ".join(clean_dongs(r)[:6]) or "전 지역") for r in rs])
-    page(p, "지역별 폐기물·철거 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역별 대형폐기물 수거, 폐기물 처리, 철거 안내.",
+    page(p, "지역별 폐기물·철거 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역별 폐기물 내려드림·철거 안내.",
          f'<section class="section"><div class="wrap"><div class="prose"><p>지역을 고르면 출동 가능한 동네, 상담 때 확인할 조건, 그 지역에서 기록한 작업사례, 직접 버릴 때 참고할 안내를 보실 수 있습니다.</p></div>{blocks}</div></section>',
          head("지역별 폐기물·철거 안내", "서울·경기·인천 동네별 안내입니다."), crumbs=[(p, "지역별 안내")], og_sub="서울·경기·인천 지역별 안내")
     regions = list(CL.REGION.values())
@@ -1603,7 +1634,7 @@ def build_locals(region_kws):
         check_html = "".join(f"<tr><th scope=\"row\">{e(k)}</th><td>{e(v)}</td></tr>" for k, v in checks)
         exp = [(d, x) for d in loc_details for x in d["process"]]
         exp_items = [f'<li>{e(x)} <a href="../cases/detail/{d["slug"]}.html">({e(d["place"])}, {d["date"]})</a></li>' for d, x in exp]
-        exp_items += [f'<li>{e(c["desc"] or c["title"])} <a href="../daily/{c["post"]}.html">(블로그 현장 기록, {c["date"]})</a></li>'
+        exp_items += [f'<li>{e(c["desc"] or c["title"])} (블로그 현장 기록, {c["date"]})</li>'
                       for c in loc_cards if c.get("post")][:6]
         exp_html = ("<ul class=\"checklist\">" + "".join(exp_items) + "</ul>") if exp_items \
             else f'<p class="muted">{e(r["name"])}에서 공개한 작업 기록은 아직 없습니다. 위 표는 상담 때 확인하는 항목이며, 이 지역 작업 이력을 뜻하지 않습니다.</p>'
@@ -1627,7 +1658,7 @@ def build_locals(region_kws):
             near = (same[k:] + same[:k])[:4]
             near_head = f"{r['area']} 다른 지역"
         dongs = clean_dongs(r)
-        svc_phrase = ", ".join(REGION_KIND_LINK[k][0] for k in dict.fromkeys(CL.RTYPE.get(it["rest"], "general") for it in items) if k not in ("report", "company", "general")) or "대형폐기물 수거, 폐가전 수거, 이사 폐기물, 철거"
+        svc_phrase = ", ".join(REGION_KIND_LINK[k][0] for k in dict.fromkeys(CL.RTYPE.get(it["rest"], "general") for it in items) if k not in ("report", "company", "general")) or "대형 짐 내려드림, 가전 내려드림, 이사 폐기물, 철거"
         summary = (f"강산자원은 {r['name']} 가정집·사무실·상가에서 {svc_phrase} 작업을 합니다. "
                    f"사진을 보내주시면 무료로 견적을 안내하고, 작업은 예약한 날짜에 진행합니다. {CL.LD.NEAR_TEXT[r['near']]}")
         main = f"""
@@ -1640,7 +1671,7 @@ def build_locals(region_kws):
       <p class="muted">{e(r['name'])} 전 지역으로 출동합니다. 목록은 대표 동 이름이며, 목록에 없는 동도 출동합니다. 이 목록은 작업 이력을 뜻하지 않습니다.</p>
       {off_html}
       <h2>③ 현장 상담 때 확인할 조건</h2>
-      <p>건물 종류와 반출 여건에 따라 필요한 차량과 작업 방법이 달라집니다. 상담 때 아래 항목을 확인합니다.</p>
+      <p>건물 종류와 내리는 여건에 따라 필요한 인원과 작업 방법이 달라집니다. 상담 때 아래 항목을 확인합니다.</p>
       <div class="table-wrap"><table><thead><tr><th scope="col">확인 항목</th><th scope="col">확인할 내용</th></tr></thead><tbody>{check_html}</tbody></table></div>
       <h3>{e(r['name'])}에서 실제로 수행한 작업</h3>
       {exp_html}
@@ -1662,7 +1693,7 @@ def build_locals(region_kws):
     <h2>⑥ {e(r['name'])} 자주 묻는 질문</h2>
     {faq_html(faqs, open_first=True)}
     <h2>⑦ 견적 준비사항과 문의</h2>
-    <ul class="checklist"><li>버릴 물건 전체 사진과 큰 물건 하나씩 찍은 사진</li><li>동네 이름(동까지), 층수, 엘리베이터 유무</li><li>건물 앞 차량 정차 가능 여부와 반출 시간 제한</li><li>희망 날짜와 시간대, 남길 물건</li></ul>
+    <ul class="checklist"><li>버릴 물건 전체 사진과 큰 물건 하나씩 찍은 사진</li><li>동네 이름(동까지), 층수, 엘리베이터 유무</li><li>1층에 짐을 내려놓을 장소와 작업 시간 제한</li><li>희망 날짜와 시간대, 남길 물건</li></ul>
     <p>단계별 준비사항과 비용 기준은 <a href="../estimate.html">무료견적·작업 절차</a>에서 보실 수 있습니다.</p>
     <div class="btn-row">{btn_kakao()}{btn_call()}</div>
     <h2>⑧ {e(near_head)}</h2>
@@ -1671,12 +1702,12 @@ def build_locals(region_kws):
   <aside class="aside"><div class="note"><strong>이 지역 안내 순서</strong><ol><li>요약</li><li>서비스 가능 동네</li><li>확인할 조건</li><li>작업사례</li><li>품목과 서비스</li><li>FAQ</li><li>견적 준비</li><li>인근 지역</li></ol></div></aside>
 </div></section>"""
         imgs = ([x["src"] for d in loc_details for x in DETAIL_PHOTOS[d["slug"]]] + [f"images/pair/{c['id']}.jpg" for c in cs] + case_imgs(cs))
-        ld = [{"@type": "Service", "name": title, "serviceType": "폐기물 수집·운반, 대형폐기물 수거, 철거",
+        ld = [{"@type": "Service", "name": title, "serviceType": "폐기물 내려드림(1층까지), 실내철거",
                "provider": {"@id": url("index.html") + "#business"},
                "areaServed": {"@type": "AdministrativeArea", "name": r["name"], "containsPlace": [{"@type": "Place", "name": d} for d in dongs]},
                "image": [url(x) for x in imgs[:6]]}, faq_ld(faqs)]
         og = detail_pair(loc_details[0]) if loc_details else case_photo(cs[0]["id"])
-        page(p, title, f"{r['name']} 대형폐기물·폐가구·폐가전 수거, 폐기물 처리, 철거. 확인할 조건, 지역 사례, 견적 준비사항. 강산자원 사진 무료 견적.",
+        page(p, title, f"{r['name']} 가구·가전·짐 1층까지 내려드림, 실내철거. 확인할 조건, 지역 사례, 견적 준비사항. 강산자원 사진 무료 견적.",
              main, head(title, f"{r['name']} 전 지역 출동 · 사진 무료 견적 · 작업은 예약제", "지역별 안내"),
              crumbs=[("local/index.html", "지역별 안내"), (p, r["name"])], ld=ld,
              og_photo=og, og_sub=f"{r['name']} 전 지역 출동 · 사진 무료 견적", images=imgs, lead_thumb=False)
@@ -1695,14 +1726,14 @@ def build_misc():
         fq = s["faqs"] + s["more_faqs"]
         all_faqs += fq
         svc_faqs += f'<h2 style="margin-top:40px">{e(s["name"])}</h2>' + faq_html(fq)
-    page(p, "자주 묻는 질문", "강산자원 폐기물 처리 자주 묻는 질문: 비용과 견적, 출동 지역, 당일·주말 작업, 소량 수거, 쓰레기집 정리, 철거·원상복구, 유품정리, 처리 불가 품목.",
+    page(p, "자주 묻는 질문", "강산자원 자주 묻는 질문: 비용과 견적, 출동 지역, 당일·주말 작업, 작업 범위, 쓰레기집 정리, 철거·원상복구, 유품정리, 다룰 수 없는 불가 품목.",
          f'<section class="section"><div class="wrap"><div class="section-head"><h2>일반 문의</h2></div>{faq_html(C.GENERAL_FAQS, open_first=True)}{svc_faqs}</div></section>',
          head("자주 묻는 질문", f"견적, 일정, 작업 범위에 대해 가장 많이 받는 질문 {len(all_faqs)}개입니다."),
          crumbs=[(p, "자주 묻는 질문")], ld=[faq_ld(all_faqs)], og_sub=f"견적·일정·작업 범위 질문 {len(all_faqs)}개")
 
     p = "reviews.html"
     reviews = "".join(f'<blockquote class="review"><p>{e(t)}</p><footer>당근 동네업체 후기 · {e(k)}</footer></blockquote>' for k, t in C.REVIEWS)
-    page(p, "고객 후기", "강산자원 고객 후기. 부모님 댁 장롱 정리, 이사 짐 정리, 가구 방문수거, 유품정리, 사무실 창고 정리를 맡긴 고객들이 남긴 후기.",
+    page(p, "고객 후기", "강산자원 고객 후기. 당근 동네업체에 고객들이 남긴 후기를 원문 그대로 옮겼습니다.",
          f"""<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>당근 동네업체에 고객이 남긴 후기 중 일부를 옮겼습니다.</p></div><div class="reviews">{reviews}</div>
 <div class="btn-row" style="margin-top:28px"><a class="btn btn-ghost" href="{B['daangn']}" target="_blank" rel="noopener">당근에서 후기 더 보기</a><a class="btn btn-ghost" href="{B['naver_place']}" target="_blank" rel="noopener">네이버 플레이스 리뷰 보기</a></div></div></section>""",
          head("고객 후기", "강산자원에 작업을 맡긴 고객분들이 남겨주신 이야기입니다."), crumbs=[(p, "고객 후기")], og_sub="당근·네이버 플레이스 고객 후기")
@@ -1742,13 +1773,13 @@ def build_text_files():
     items = "".join(f"<item><title>{e(t)}</title><link>{url(pth)}</link><guid>{url(pth)}</guid><description>{e(d)}</description><pubDate>{rfc(LASTMOD[pth]['date'])}</pubDate></item>" for pth, t, d in feed)
     open(os.path.join(DIST, "rss.xml"), "w", encoding="utf-8").write(
         f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>강산자원</title><link>{url("index.html")}</link>'
-        f'<description>30년 경력 폐기물 처리·쓰레기집 정리·실내철거 강산자원</description><language>ko</language>{items}</channel></rss>\n')
+        f'<description>30년 경력 폐기물 내려드림·쓰레기집 정리·실내철거 강산자원</description><language>ko</language>{items}</channel></rss>\n')
 
     facts = "\n".join(f"- {k}: {v}" for k, v in C.FACTS)
     links = lambda pre: "\n".join(f"- [{t}]({url(pth)}): {d}" for pth, t, d, _, idx in PAGES if pth.startswith(pre) and idx)
     llms = f"""# 강산자원
 
-> 강산자원은 회사 운영 30년의 폐기물 처리·실내철거 전문업체입니다. 서울·경기·인천 수도권 전 지역에서 대형폐기물·폐가구·폐가전 수거, 이사 폐기물, 유품정리, 쓰레기집 정리·청소, 사무실·상가 원상복구, 실내철거를 합니다. 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’에서 사진을 보내면 무료로 견적을 받을 수 있습니다.
+> 강산자원은 회사 운영 30년의 폐기물 내려드림·실내철거 전문업체입니다. 서울·경기·인천 수도권에서 혼자 옮기기 어려운 가구·가전·생활짐을 분해해 1층(건물 밖 정한 장소)까지 내려드리고, 실내철거·부분철거 후 나온 잔재도 1층까지 내려드립니다. 유품정리, 쓰레기집 정리, 사무실·상가 원상복구 철거도 합니다. 내려드린 뒤 배출 방법은 상담 때 안내합니다. 대표전화 010-6338-4016, 카카오톡 채널 ‘강산자원’에서 사진을 보내면 무료로 견적을 받을 수 있습니다.
 
 ## 핵심 정보
 {facts}
@@ -1756,7 +1787,7 @@ def build_text_files():
 ## 서비스
 {links("services/")}
 
-## 품목별 수거
+## 품목별 안내
 {links("items/")}
 
 ## 현장 상세 기록 (요청·현장 조건·과정·완료 범위·원문 출처)
@@ -1771,7 +1802,6 @@ def build_text_files():
 ## 안내
 - [무료견적·작업 절차]({url("estimate.html")})
 - [현장 영상]({url("videos.html")})
-- [강산 일상 (블로그 연동)]({url("daily/index.html")})
 - [고객 후기]({url("reviews.html")})
 - [자주 묻는 질문]({url("faq.html")})
 - [회사소개]({url("about.html")})
@@ -1786,7 +1816,7 @@ def build_text_files():
 ## 폐기물 칼럼
 {links("column/")}
 
-## 폐기물 처리 가이드
+## 폐기물 배출 가이드
 {links("guide/")}
 
 ## Optional
@@ -1800,18 +1830,17 @@ def build_text_files():
         if s.get("approach"):
             out.append("\n진행 방식: " + " → ".join(f"{t}({d})" for t, d in s["approach"]))
         out.append("\n" + "\n".join(f"Q. {q}\nA. {a}" for q, a in s["faqs"] + s["more_faqs"]) + "\n")
-    out.append("\n---\n# 품목별 수거\n" + "\n".join(f"\n## {i['name']}\n{i['sub']}\n" + " ".join(i["intro"]) + "\n" + "\n".join(f"- {x}" for x in i["points"]) for i in ITEMS))
+    out.append("\n---\n# 품목별 안내\n" + "\n".join(f"\n## {i['name']}\n{i['sub']}\n" + " ".join(i["intro"]) + "\n" + "\n".join(f"- {x}" for x in i["points"]) for i in ITEMS))
     out.append("\n\n# 작업 절차 (7단계)\n" + "\n".join(
         f"{i + 1}. {d['step']}: {d['desc']} 고객 준비: {'; '.join(d['customer'])}. 강산자원: {'; '.join(d['company'])}." + (f" 합의: {'; '.join(d['agree'])}." if d['agree'] else "")
         for i, d in enumerate(C.PROCESS_DETAIL)))
     out.append("\n\n# 비용 기준 (사진 무료 견적)\n" + "\n".join(f"- {t}: {d}" for t, d in C.PRICE_FACTORS))
-    out.append("\n\n# 보유 차량\n" + "\n".join(f"- {v['name']}: {v['use']}. {v['note']}" for v in C.VEHICLES))
     out.append("\n\n# 출동 지역\n" + "\n".join(f"- {a['full']}: {', '.join(a['districts'])}" for a in C.AREAS.values()))
     out.append("\n\n# 현장 상세 기록\n" + "\n".join(
         f"\n## {d['title']}\n{url('cases/detail/' + d['slug'] + '.html')}\n기록일 {d['date']} · {d['place']} · 출처 {d['source']}\n요청: {d['request']}\n"
         + "확인된 현장 정보: " + " / ".join(f"{k}: {v}" for k, v in d["site"]) + "\n작업 과정: " + " ".join(d["process"])
         + "\n완료 범위: " + " ".join(d["scope"]) for d in CDT.DETAILS))
-    out.append("\n\n# 수거 범위와 다른 작업\n" + "\n".join(f"- {a}: {b} ({c})" for a, b, c in C.SCOPE_TABLE))
+    out.append("\n\n# 작업 범위와 다른 작업\n" + "\n".join(f"- {a}: {b} ({c})" for a, b, c in C.SCOPE_TABLE))
     out.append("\n\n# 비용 안내 방식\n" + "\n".join(f"- {a}: {b}" for a, b in C.COST_GUIDE))
     out.append("\n\n# 작업사례\n" + "\n".join(f"- [{CAT_NAME[c['cat']]}] {c['title']}: {c['desc']}" for c in CASES))
     out.append("\n\n# 자주 묻는 질문\n" + "\n".join(f"Q. {q}\nA. {a}" for q, a in C.GENERAL_FAQS))
@@ -1819,7 +1848,7 @@ def build_text_files():
     if INSTA:
         out.append("\n\n# 현장 영상 (인스타그램)\n" + "\n".join(f"- {v['date']} {insta_title(v)} ({v['url']})" for v in INSTA))
     if BLOG:
-        out.append("\n\n# 강산 일상 (블로그)\n" + "\n".join(f"- {x['date']} {x['title']} ({x['url']})" for x in BLOG))
+        pass  # 2026-11-10: 블로그 글 제목 목록은 싣지 않음
     for g in GUIDES:
         out.append(f"\n\n# 가이드: {g['title']}\n{g['desc']}\n" + "\n".join(f"\n## {h}\n" + "\n".join(ps) for h, ps in g["sections"]))
     open(os.path.join(DIST, "llms-full.txt"), "w", encoding="utf-8").write("".join(out) + "\n")
@@ -1879,7 +1908,10 @@ if __name__ == "__main__":
         if paras:
             x["summary"] = " ".join(paras)[:180]
     INSTA, seen = [], set()
-    for v in sorted(load_json("instagram.json"), key=lambda v: not v["video"]):  # 같은 내용이면 영상 우선
+    _ig = load_json("instagram.json")
+    for v in _ig:  # 설명글 중 수거·운반 표현이 있는 줄은 뺀다
+        v["caption"] = "\n".join(x for x in (SF.soften(l) for l in v["caption"].splitlines()) if x)
+    for v in sorted(_ig, key=lambda v: not v["video"]):  # 같은 내용이면 영상 우선
         key = insta_title(v)
         if key not in seen and os.path.exists(os.path.join(DATA, "insta_img", v["code"] + ".jpg")):
             seen.add(key); INSTA.append(v)
@@ -1899,7 +1931,7 @@ if __name__ == "__main__":
     build_cases()
     build_case_details()
     build_videos()
-    build_daily()
+    # build_daily()  # 2026-11-10: 블로그 원문(수거·운반 표현 포함)을 홈페이지에 옮겨 싣지 않음
     build_estimate()
     build_about()
     build_areas()
@@ -1908,6 +1940,13 @@ if __name__ == "__main__":
     build_columns(TOPIC_KWS)
     build_locals(REGION_KWS)
     build_text_files()
+    for _gone in ("cases/detail/eunpyeong-after-move-furniture.html", "cases/detail/cheongdam-office-chairs-evening.html"):
+        # 2026-11-10 내린 사례: 옛 주소로 들어오면 작업사례 목록으로 보낸다 (색인 제외)
+        os.makedirs(os.path.join(DIST, os.path.dirname(_gone)), exist_ok=True)
+        open(os.path.join(DIST, _gone), "w", encoding="utf-8").write(
+            f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex,follow">'
+            f'<link rel="canonical" href="{url("cases/index.html")}"><meta http-equiv="refresh" content="0; url=../index.html">'
+            f'<title>작업사례 | 강산자원</title></head><body><p><a href="../index.html">작업사례로 이동</a></p></body></html>')
     with open(LASTMOD_FILE, "w", encoding="utf-8") as f:
         json.dump(dict(sorted(LASTMOD.items())), f, ensure_ascii=False, indent=0)
     n_idx = sum(1 for p in PAGES if p[4])
