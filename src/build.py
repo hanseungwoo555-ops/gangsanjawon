@@ -557,7 +557,8 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
 
 
 BLOG_ID = "behalf1oj"
-BLOGS = [("behalf1oj", "네이버 블로그"), ("dqaslope", "네이버 블로그 (365일 폐기물처리)")]  # sync.BLOG_IDS 와 같게
+BLOGS = [("dqaslope", "네이버 블로그")]  # 홈페이지에 링크할 블로그. behalf1oj 는 2026-11-17 확인 결과 블로그가 없어져 링크하지 않음
+GONE_BLOGS = ("blog.naver.com/behalf1oj",)
 
 
 def analytics_html():
@@ -608,7 +609,8 @@ def faq_ld(faqs):
 
 
 def head(title, lead, eyebrow=""):
-    return (f'<span class="eyebrow">{e(eyebrow)}</span>' if eyebrow else "") + f'<h1>{e(title)}</h1><p>{e(lead)}</p>'
+    # 제목 위 작은 꼬리표는 넣지 않는다 (분류는 상단 경로 표시에 이미 있음)
+    return f'<h1>{e(title)}</h1><p>{e(lead)}</p>'
 
 
 def img(path_from, src, alt, w=900, h=1200, lazy=True, cls=""):
@@ -624,9 +626,9 @@ def case_card(path, c, lazy=True):
     <figure>{img(path, f"images/cases/sm/{c['id']}-before.jpg", c['title'] + ' 작업 전 모습', 480, 640, lazy=lazy)}<figcaption>작업 전</figcaption></figure>
     <figure>{img(path, f"images/cases/sm/{c['id']}-after.jpg", c['title'] + ' 작업 후 모습', 480, 640, lazy=lazy)}<figcaption>작업 후</figcaption></figure>
   </div>
-  <span class="tag"><a href="{rel(path, 'cases/' + c['cat'] + '.html')}">{e(CAT_NAME[c['cat']])}</a>{'' if CAT_NAME[c['cat']] == s['name'] else f""" · <a href="{rel(path, 'services/' + s['slug'] + '.html')}">{e(s['name'])}</a>"""}</span>
   <h3>{detail_link(path, c)}</h3>
   <p>{e(c['desc'])}</p>
+  <span class="tag"><a href="{rel(path, 'cases/' + c['cat'] + '.html')}">{e(CAT_NAME[c['cat']])}</a>{'' if CAT_NAME[c['cat']] == s['name'] else f""" · <a href="{rel(path, 'services/' + s['slug'] + '.html')}">{e(s['name'])}</a>"""}</span>
 </article>"""
 
 
@@ -695,9 +697,9 @@ def detail_card(path, d, lazy=True):
     <figure>{img(path, b['src'], b['cap'], b['w'], b['h'], lazy=lazy)}<figcaption>{KIND_LABEL[b['kind']]}</figcaption></figure>
     <figure>{img(path, a['src'], a['cap'], a['w'], a['h'], lazy=lazy)}<figcaption>{KIND_LABEL[a['kind']]}</figcaption></figure>
   </div>
-  <span class="tag">현장 상세 기록 · {e(d['place'])} · {d['date']}</span>
   <h3><a href="{href}">{e(d['title'])}</a></h3>
   <p>{e(d['summary'])}</p>
+  <span class="tag">현장 상세 기록 · {e(d['place'])} · {d['date']}</span>
 </article>"""
 
 
@@ -840,9 +842,8 @@ def build_home():
 <section class="hero">
   <div class="wrap">
     <div class="hero-copy">
-      <span class="eyebrow">서울·경기·인천 폐기물 내려드림 · 쓰레기집 정리 · 실내철거</span>
-      <h1>옮기기 힘든 짐,<br><em>30년 경력</em> 강산자원이<br>1층까지 내려드립니다</h1>
-      <p class="hero-lead">혼자 옮기기 어려운 가구·가전·생활짐을 분해해 1층까지 내려드리고, 실내철거 후 나온 잔재도 1층까지 내려드립니다. 사진만 보내시면 견적은 무료입니다.</p>
+      <h1>옮기기 힘든 짐,<br>30년 경력 강산자원이<br>1층까지 내려드립니다</h1>
+      <p class="hero-lead">서울·경기·인천에서 폐기물 내려드림, 쓰레기집 정리, 실내철거를 합니다. 혼자 옮기기 어려운 가구·가전·생활짐을 분해해 1층까지 내려드리고, 실내철거 후 나온 잔재도 1층까지 내려드립니다. 사진만 보내시면 견적은 무료입니다.</p>
       <ul class="hero-tags"><li>누적 10,000건 이상 현장</li><li>24시간 상담</li><li>100% 예약제 작업</li><li>사진 무료 견적</li></ul>
       <div class="btn-row">{btn_kakao()}{btn_call()}</div>
     </div>
@@ -861,7 +862,7 @@ def build_home():
 
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Before &amp; After</span><h2>작업 전과 후</h2>
+    <div class="section-head"><h2>작업 전과 후</h2>
       <p>강산자원이 작업한 현장 사진입니다. 전후 사진 {len(CASES)}건은 <a href="cases/index.html">작업사례</a>에서 보실 수 있습니다.</p></div>
     <div class="cases">{cases}</div>
     <h3 class="sub-title">현장 기록과 안내 바로가기</h3>
@@ -871,14 +872,14 @@ def build_home():
 
 {f'''<section class="section band">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Videos</span><h2>현장 영상</h2><p>인스타그램에 올린 작업 영상입니다. <a href="videos.html">영상 더 보기</a></p></div>
+    <div class="section-head"><h2>현장 영상</h2><p>인스타그램에 올린 작업 영상입니다. <a href="videos.html">영상 더 보기</a></p></div>
     <div class="videos">{videos}</div>
   </div>
 </section>''' if videos else ''}
 
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">About</span><h2>강산자원은 이런 업체입니다</h2>
+    <div class="section-head"><h2>강산자원은 이런 업체입니다</h2>
       <p>서울·경기·인천 수도권에서 일하는 폐기물 내려드림·실내철거 전문업체입니다. 가정, 사무실, 상가, 창고의 짐을 분해해 1층까지 내려드리고, 쓰레기집 정리부터 철거와 원상복구까지 진행합니다.</p></div>
     {sheet(C.FACTS)}
   </div>
@@ -886,7 +887,7 @@ def build_home():
 
 <section class="section band">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Services</span><h2>맡기실 수 있는 일</h2>
+    <div class="section-head"><h2>맡기실 수 있는 일</h2>
       <p>가정의 가구 한 점부터 쓰레기집, 상가 폐업 철거, 공사 현장 폐기물까지 강산자원이 처리하는 {len(SERVICES)}가지 작업입니다.</p></div>
     <div class="svc-grid">{svc_items}</div>
   </div>
@@ -894,14 +895,14 @@ def build_home():
 
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Items</span><h2>버리실 물건으로 찾기</h2><p>품목마다 옮기는 방법과 주의할 점이 다릅니다.</p></div>
+    <div class="section-head"><h2>버리실 물건으로 찾기</h2><p>품목마다 옮기는 방법과 주의할 점이 다릅니다.</p></div>
     <ul class="chips chips-lg">{item_chips}</ul>
   </div>
 </section>
 
 <section class="section band">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Why</span><h2>강산자원에 맡기는 이유</h2></div>
+    <div class="section-head"><h2>강산자원에 맡기는 이유</h2></div>
     <div class="why">{why}</div>
   </div>
 </section>
@@ -909,7 +910,7 @@ def build_home():
 <section class="section">
   <div class="wrap split">
     <div>
-      <div class="section-head"><span class="eyebrow">Process</span><h2>견적부터 마무리까지</h2>
+      <div class="section-head"><h2>견적부터 마무리까지</h2>
         <p>가격은 작업마다 물량과 현장 조건이 달라 사진을 보고 정합니다. 견적은 무료입니다.</p></div>
       {steps_html(C.PROCESS)}
       <p style="margin-top:16px"><a href="estimate.html">단계마다 준비할 것과 비용이 정해지는 기준 보기 →</a></p>
@@ -920,7 +921,7 @@ def build_home():
 
 {f'''<section class="section band">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Daily</span><h2>강산 일상</h2><p>블로그에 올린 최근 현장 이야기입니다. <a href="daily/index.html">전체 보기</a></p></div>
+    <div class="section-head"><h2>강산 일상</h2><p>블로그에 올린 최근 현장 이야기입니다. <a href="daily/index.html">전체 보기</a></p></div>
     <div class="posts">{posts}</div>
   </div>
 </section>''' if posts else ''}
@@ -929,21 +930,21 @@ def build_home():
 
 <section class="section band">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Area</span><h2>서울·경기·인천 어디든 출동합니다</h2><p>서울·경기·인천 수도권 전 지역에 출동합니다. 작업은 예약제이며, 당일 출동 가능 여부는 그날 일정에 따라 상담으로 안내합니다.</p></div>
+    <div class="section-head"><h2>서울·경기·인천 어디든 출동합니다</h2><p>서울·경기·인천 수도권 전 지역에 출동합니다. 작업은 예약제이며, 당일 출동 가능 여부는 그날 일정에 따라 상담으로 안내합니다.</p></div>
     <div class="table-wrap"><table><tbody>{area_rows}</tbody></table></div>
   </div>
 </section>
 
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">Reviews</span><h2>고객 후기</h2><p>당근 동네업체에 남겨주신 후기 중 일부입니다. <a href="reviews.html">후기 더 보기</a></p></div>
+    <div class="section-head"><h2>고객 후기</h2><p>당근 동네업체에 남겨주신 후기 중 일부입니다. <a href="reviews.html">후기 더 보기</a></p></div>
     <div class="reviews">{reviews}</div>
   </div>
 </section>
 
 <section class="section band">
   <div class="wrap">
-    <div class="section-head"><span class="eyebrow">FAQ</span><h2>자주 묻는 질문</h2></div>
+    <div class="section-head"><h2>자주 묻는 질문</h2></div>
     {faq_html(C.GENERAL_FAQS[:8], open_first=True)}
     <p style="margin-top:16px"><a href="faq.html">질문 전체 보기 →</a></p>
   </div>
@@ -1151,7 +1152,7 @@ def build_case_details():
 <section class="section">
   <div class="wrap split">
     <article class="prose case-detail">
-      <p class="muted">기록일 {d['date']} · 수정일 {d['updated']} · 출처: <a href="{d['source']}" target="_blank" rel="noopener">강산자원 블로그 원문 ↗</a></p>
+      <p class="muted">기록일 {d['date']} · 수정일 {d['updated']} · 출처: {'강산자원 블로그 기록 (원문은 현재 공개되어 있지 않음)' if any(g in d['source'] for g in GONE_BLOGS) else f'<a href="{d["source"]}" target="_blank" rel="noopener">강산자원 블로그 원문 ↗</a>'}</p>
       <p class="note"><strong>요약</strong> {e(d['summary'])}</p>
       <h2>고객 요청</h2>
       <p>{e(d['request'])}</p>
@@ -1182,7 +1183,7 @@ def build_case_details():
                "datePublished": d["date"], "dateModified": d["updated"],
                "image": [url(x["src"]) for x in ph[:6]],
                "author": {"@id": url("index.html") + "#business"}, "publisher": {"@id": url("index.html") + "#business"},
-               "mainEntityOfPage": url(p), "isBasedOn": d["source"],
+               "mainEntityOfPage": url(p), **({} if any(g in d["source"] for g in GONE_BLOGS) else {"isBasedOn": d["source"]}),
                "about": {"@type": "Service", "name": SVC[d["service"]]["name"], "provider": {"@id": url("index.html") + "#business"}}}]
         if r:
             ld[0]["contentLocation"] = {"@type": "Place", "name": d["place"]}
@@ -1347,7 +1348,7 @@ def build_about():
       <h2>상담과 작업 방식</h2>
       <p>상담은 전화와 카카오톡으로 24시간, 연중무휴 받습니다. 작업은 100% 예약제로, 상담 후 정한 날짜와 시간에 진행하며 주말·공휴일도 예약할 수 있습니다. 수도권 당일 출동은 그날 일정에 따라 상담으로 안내합니다.</p>
       <h2>작업 기록을 공개합니다</h2>
-      <p>현장마다 작업 전·과정·후 사진과 진행 내용을 <a href="https://blog.naver.com/{BLOG_ID}" target="_blank" rel="noopener">강산자원 블로그</a>에 올리고, 그중 자료가 충분한 현장은 <a href="cases/index.html#detail">현장 상세 기록</a>으로 정리합니다. 고객 후기는 <a href="reviews.html">당근 동네업체 후기</a>를 원문 그대로 옮겼습니다.</p>
+      <p>현장마다 작업 전·과정·후 사진과 진행 내용을 <a href="https://blog.naver.com/{BLOGS[0][0]}" target="_blank" rel="noopener">강산자원 블로그</a>에 올리고, 그중 자료가 충분한 현장은 <a href="cases/index.html#detail">현장 상세 기록</a>으로 정리합니다. 고객 후기는 <a href="reviews.html">당근 동네업체 후기</a>를 원문 그대로 옮겼습니다.</p>
       <h2>강산자원의 원칙</h2>
       <ul class="checklist"><li>사진을 보고 견적과 포함 범위를 함께 안내합니다.</li><li>사진과 달라진 짐이나 조건은 작업 전에 먼저 알려드립니다.</li><li>반출 동선을 먼저 확인하고 작업합니다.</li><li>처리할 수 없는 품목은 미리 안내합니다.</li></ul>
     </article>
@@ -1837,7 +1838,7 @@ def build_text_files():
     out.append("\n\n# 비용 기준 (사진 무료 견적)\n" + "\n".join(f"- {t}: {d}" for t, d in C.PRICE_FACTORS))
     out.append("\n\n# 출동 지역\n" + "\n".join(f"- {a['full']}: {', '.join(a['districts'])}" for a in C.AREAS.values()))
     out.append("\n\n# 현장 상세 기록\n" + "\n".join(
-        f"\n## {d['title']}\n{url('cases/detail/' + d['slug'] + '.html')}\n기록일 {d['date']} · {d['place']} · 출처 {d['source']}\n요청: {d['request']}\n"
+        f"\n## {d['title']}\n{url('cases/detail/' + d['slug'] + '.html')}\n기록일 {d['date']} · {d['place']} " + ("" if any(g in d['source'] for g in GONE_BLOGS) else f" · 출처 {d['source']}") + f"\n요청: {d['request']}\n"
         + "확인된 현장 정보: " + " / ".join(f"{k}: {v}" for k, v in d["site"]) + "\n작업 과정: " + " ".join(d["process"])
         + "\n완료 범위: " + " ".join(d["scope"]) for d in CDT.DETAILS))
     out.append("\n\n# 작업 범위와 다른 작업\n" + "\n".join(f"- {a}: {b} ({c})" for a, b, c in C.SCOPE_TABLE))
