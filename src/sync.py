@@ -16,8 +16,8 @@ from datetime import datetime
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(SRC, "data")
-BLOG_ID = "behalf1oj"  # 대표 블로그 (홈페이지 링크용)
-BLOG_IDS = ["behalf1oj", "dqaslope"]  # 홈페이지 ‘강산 일상’에 글을 가져올 블로그. 늘리려면 여기에 아이디를 추가
+BLOG_ID = "dqaslope"  # 대표 블로그 (홈페이지 링크용). behalf1oj 는 2026-11-17 삭제 확인 후 제외
+BLOG_IDS = ["dqaslope"]  # 홈페이지 ‘강산 일상’에 글을 가져올 블로그. 늘리려면 여기에 아이디를 추가
 INSTA_USER = "gangsan_30"
 BLOG_IMG_DIR = os.path.join(DATA, "blog_img")
 INSTA_IMG_DIR = os.path.join(DATA, "insta_img")

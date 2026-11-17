@@ -556,9 +556,11 @@ def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title
         f.write(doc)
 
 
-BLOG_ID = "behalf1oj"
+BLOG_ID = "dqaslope"
 BLOGS = [("dqaslope", "네이버 블로그")]  # 홈페이지에 링크할 블로그. behalf1oj 는 2026-11-17 확인 결과 블로그가 없어져 링크하지 않음
 GONE_BLOGS = ("blog.naver.com/behalf1oj",)
+# 글 제목·설명의 이모지는 화면에 쓰지 않는다 (Hallmark 점검 30a)
+EMOJI = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]")
 
 
 def analytics_html():
@@ -639,7 +641,7 @@ def detail_link(path, c):
         return e(c["title"])
     if not slug:
         return e(c["title"])
-    return f'<a href="{rel(path, "cases/detail/" + slug + ".html")}">{e(c["title"])}</a> <small class="more">상세 기록 →</small>'
+    return f'<a href="{rel(path, "cases/detail/" + slug + ".html")}">{e(c["title"])}</a> <small class="more">상세 기록</small>'
 
 
 # ---------------------------------------------------------------- 작업사례 상세 (case_data.py)
@@ -699,7 +701,7 @@ def detail_card(path, d, lazy=True):
   </div>
   <h3><a href="{href}">{e(d['title'])}</a></h3>
   <p>{e(d['summary'])}</p>
-  <span class="tag">현장 상세 기록 · {e(d['place'])} · {d['date']}</span>
+  <span class="tag meta"><span>현장 상세 기록</span><span>{e(d['place'])}</span><time>{d['date']}</time></span>
 </article>"""
 
 
@@ -823,7 +825,7 @@ def build_home():
             seen_posts.add(c["post"]); latest.append(c)
     hero = latest[0] if latest else CASE["b275"]
     svc_items = "".join(
-        f'<a class="svc" href="services/{s["slug"]}.html"><h3><small>{i + 1:02d}</small>{e(s["name"])}</h3><p>{e(s["short"])}</p><span class="more">자세히 보기 →</span></a>'
+        f'<a class="svc" href="services/{s["slug"]}.html"><h3><small>{i + 1:02d}</small>{e(s["name"])}</h3><p>{e(s["short"])}</p><span class="more">자세히 보기</span></a>'
         for i, s in enumerate(SERVICES))
     home_cases = (latest[1:7] + [CASE[i] for i in ["g000", "g012", "g090", "g109", "g131", "g047"] if i in CASE])[:6]
     cases = "".join(case_card(p, c) for c in home_cases)
@@ -832,7 +834,7 @@ def build_home():
         f'<article class="feat"><a href="{l}" tabindex="-1" aria-hidden="true"><img src="{th}" alt="{e(t)}" width="1000" height="1000" decoding="async"{" loading=\"lazy\"" if i > 3 else ""}></a>'
         f'<h3><a href="{l}">{e(t)}</a></h3><p>{e(sub)}</p></article>' for i, (l, t, sub, th) in enumerate(feats))
     why = "".join(f"<div><h3>{e(t)}</h3><p>{e(d)}</p></div>" for t, d in C.WHY)
-    reviews = "".join(f'<blockquote class="review"><p>{e(t)}</p><footer>당근 동네업체 후기 · {e(k)}</footer></blockquote>' for k, t in C.REVIEWS[:3])
+    reviews = "".join(f'<blockquote class="review"><p>{e(t)}</p><footer>당근 동네업체 후기, {e(k)}</footer></blockquote>' for k, t in C.REVIEWS[:3])
     vehicles = "".join(f'<div class="vehicle"><b>{e(v["name"])}</b><p><strong>주요 작업</strong> {e(v["use"])}</p><p>{e(v["note"])}</p></div>' for v in C.VEHICLES)
     area_rows = "".join(f'<tr><th scope="row"><a href="areas/{k}.html">{e(a["full"])}</a></th><td>{e(", ".join(a["districts"]))}</td></tr>' for k, a in C.AREAS.items())
     item_chips = "".join(f'<li><a href="items/{i["slug"]}.html">{e(i["name"])}</a></li>' for i in ITEMS)
@@ -913,7 +915,7 @@ def build_home():
       <div class="section-head"><h2>견적부터 마무리까지</h2>
         <p>가격은 작업마다 물량과 현장 조건이 달라 사진을 보고 정합니다. 견적은 무료입니다.</p></div>
       {steps_html(C.PROCESS)}
-      <p style="margin-top:16px"><a href="estimate.html">단계마다 준비할 것과 비용이 정해지는 기준 보기 →</a></p>
+      <p style="margin-top:16px"><a href="estimate.html">단계별 준비물과 비용 기준 보기</a></p>
     </div>
     <aside class="aside">{cta_card()}</aside>
   </div>
@@ -946,7 +948,7 @@ def build_home():
   <div class="wrap">
     <div class="section-head"><h2>자주 묻는 질문</h2></div>
     {faq_html(C.GENERAL_FAQS[:8], open_first=True)}
-    <p style="margin-top:16px"><a href="faq.html">질문 전체 보기 →</a></p>
+    <p style="margin-top:16px"><a href="faq.html">질문 전체 보기</a></p>
   </div>
 </section>
 """
@@ -962,7 +964,7 @@ def build_home():
 def build_services():
     p = "services/index.html"
     items = "".join(
-        f'<a class="svc" href="{s["slug"]}.html"><h3><small>{i + 1:02d}</small>{e(s["name"])}</h3><p>{e(s["short"])}</p><span class="more">자세히 보기 →</span></a>'
+        f'<a class="svc" href="{s["slug"]}.html"><h3><small>{i + 1:02d}</small>{e(s["name"])}</h3><p>{e(s["short"])}</p><span class="more">자세히 보기</span></a>'
         for i, s in enumerate(SERVICES))
     page(p, "서비스 안내", f"강산자원 서비스 {len(SERVICES)}가지: " + ", ".join(s["name"] for s in SERVICES) + ".",
          f'<section class="section"><div class="wrap"><div class="svc-grid">{items}</div></div></section>',
@@ -1116,7 +1118,7 @@ def build_cases():
         cs = [c for c in CASES if c["cat"] == k]
         svc_ids = list(dict.fromkeys(c["service"] for c in cs))
         rel_svc = link_cards(p, [(f"services/{sid}.html", SVC[sid]["name"], SVC[sid]["short"]) for sid in svc_ids])
-        others = " · ".join(f'<a href="{kk}.html">{e(nn)}</a>' for kk, nn, _ in CATS if kk != k)
+        others = ", ".join(f'<a href="{kk}.html">{e(nn)}</a>' for kk, nn, _ in CATS if kk != k)
         cd = details_where(lambda x: x["cat"] == k)
         main = f"""
 <section class="section"><div class="wrap">
@@ -1152,7 +1154,7 @@ def build_case_details():
 <section class="section">
   <div class="wrap split">
     <article class="prose case-detail">
-      <p class="muted">기록일 {d['date']} · 수정일 {d['updated']} · 출처: {'강산자원 블로그 기록 (원문은 현재 공개되어 있지 않음)' if any(g in d['source'] for g in GONE_BLOGS) else f'<a href="{d["source"]}" target="_blank" rel="noopener">강산자원 블로그 원문 ↗</a>'}</p>
+      <p class="muted meta"><span>기록일 {d['date']}</span><span>수정일 {d['updated']}</span><span>출처: {'강산자원 블로그 기록 (원문은 현재 공개되어 있지 않음)' if any(g in d['source'] for g in GONE_BLOGS) else f'<a href="{d["source"]}" target="_blank" rel="noopener">강산자원 블로그 원문</a>'}</span></p>
       <p class="note"><strong>요약</strong> {e(d['summary'])}</p>
       <h2>고객 요청</h2>
       <p>{e(d['request'])}</p>
@@ -1279,7 +1281,7 @@ def build_estimate():
         f'''<li class="proc-step" id="step{i + 1}"><h3><span class="proc-no">{i + 1}</span>{e(d["step"])}</h3><p>{e(d["desc"])}</p>
         <div class="proc-cols">{col("고객이 준비할 것", d["customer"])}{col("강산자원이 확인·수행할 것", d["company"])}{col("다음 단계 전에 합의할 것", d["agree"])}</div></li>'''
         for i, d in enumerate(C.PROCESS_DETAIL))
-    by_svc = "".join(f'<div><h3>{e(t)}</h3><p>{e(d)} <a href="services/{sl}.html">{e(SVC[sl]["name"])} 안내 →</a></p></div>' for t, sl, d in C.PROCESS_BY_SERVICE)
+    by_svc = "".join(f'<div><h3>{e(t)}</h3><p>{e(d)} <a href="services/{sl}.html">{e(SVC[sl]["name"])} 안내</a></p></div>' for t, sl, d in C.PROCESS_BY_SERVICE)
     ex = [CDT.DETAIL[x] for x in ("seocho-move-out-empty-house", "seongbuk-anam-bed-frame", "nowon-estate-cleanup", "gangnam-office-interior-waste")]
     ex_note = [
         ("분해·반출 단계", "큰 가구를 분해하고 사다리차로 내린 서초동 이사 전 정리"),
@@ -1690,7 +1692,7 @@ def build_locals(region_kws):
   <article class="prose">
     <h2>⑤ {e(r['name'])} 관련 품목과 서비스</h2>
     {link_cards(p, cards)}
-    <p>품목별 안내: <a href="../items/wardrobe.html">장롱</a> · <a href="../items/bed-mattress.html">침대·매트리스</a> · <a href="../items/sofa.html">소파</a> · <a href="../items/fridge.html">냉장고</a> · <a href="../items/office-furniture.html">사무용 가구</a></p>
+    <p>품목별 안내: <a href="../items/wardrobe.html">장롱</a>, <a href="../items/bed-mattress.html">침대·매트리스</a>, <a href="../items/sofa.html">소파</a>, <a href="../items/fridge.html">냉장고</a>, <a href="../items/office-furniture.html">사무용 가구</a></p>
     <h2>⑥ {e(r['name'])} 자주 묻는 질문</h2>
     {faq_html(faqs, open_first=True)}
     <h2>⑦ 견적 준비사항과 문의</h2>
@@ -1709,7 +1711,7 @@ def build_locals(region_kws):
                "image": [url(x) for x in imgs[:6]]}, faq_ld(faqs)]
         og = detail_pair(loc_details[0]) if loc_details else case_photo(cs[0]["id"])
         page(p, title, f"{r['name']} 가구·가전·짐 1층까지 내려드림, 실내철거. 확인할 조건, 지역 사례, 견적 준비사항. 강산자원 사진 무료 견적.",
-             main, head(title, f"{r['name']} 전 지역 출동 · 사진 무료 견적 · 작업은 예약제", "지역별 안내"),
+             main, head(title, f"{r['name']} 전 지역 출동. 사진으로 무료 견적을 드리고, 작업은 예약제로 진행합니다.", "지역별 안내"),
              crumbs=[("local/index.html", "지역별 안내"), (p, r["name"])], ld=ld,
              og_photo=og, og_sub=f"{r['name']} 전 지역 출동 · 사진 무료 견적", images=imgs, lead_thumb=False)
 
@@ -1733,7 +1735,7 @@ def build_misc():
          crumbs=[(p, "자주 묻는 질문")], ld=[faq_ld(all_faqs)], og_sub=f"견적·일정·작업 범위 질문 {len(all_faqs)}개")
 
     p = "reviews.html"
-    reviews = "".join(f'<blockquote class="review"><p>{e(t)}</p><footer>당근 동네업체 후기 · {e(k)}</footer></blockquote>' for k, t in C.REVIEWS)
+    reviews = "".join(f'<blockquote class="review"><p>{e(t)}</p><footer>당근 동네업체 후기, {e(k)}</footer></blockquote>' for k, t in C.REVIEWS)
     page(p, "고객 후기", "강산자원 고객 후기. 당근 동네업체에 고객들이 남긴 후기를 원문 그대로 옮겼습니다.",
          f"""<section class="section"><div class="wrap"><div class="prose" style="margin-bottom:24px"><p>당근 동네업체에 고객이 남긴 후기 중 일부를 옮겼습니다.</p></div><div class="reviews">{reviews}</div>
 <div class="btn-row" style="margin-top:28px"><a class="btn btn-ghost" href="{B['daangn']}" target="_blank" rel="noopener">당근에서 후기 더 보기</a><a class="btn btn-ghost" href="{B['naver_place']}" target="_blank" rel="noopener">네이버 플레이스 리뷰 보기</a></div></div></section>""",
@@ -1907,7 +1909,7 @@ if __name__ == "__main__":
     INSTA, seen = [], set()
     _ig = load_json("instagram.json")
     for v in _ig:  # 설명글 중 수거·운반 표현이 있는 줄은 뺀다
-        v["caption"] = "\n".join(x for x in (SF.soften(l) for l in v["caption"].splitlines()) if x)
+        v["caption"] = "\n".join(x for x in (EMOJI.sub("", SF.soften(l)).strip() for l in v["caption"].splitlines()) if x)
     for v in sorted(_ig, key=lambda v: not v["video"]):  # 같은 내용이면 영상 우선
         key = insta_title(v)
         if key not in seen and os.path.exists(os.path.join(DATA, "insta_img", v["code"] + ".jpg")):
