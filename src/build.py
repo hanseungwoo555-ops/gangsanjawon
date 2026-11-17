@@ -840,16 +840,22 @@ def build_home():
     item_chips = "".join(f'<li><a href="items/{i["slug"]}.html">{e(i["name"])}</a></li>' for i in ITEMS)
     videos = "".join(insta_card(p, v) for v in INSTA[:4])
     posts = ""  # 2026-11-10: 블로그 글 목록은 홈에 싣지 않음
+    index_rows = "".join(
+        f'<li><a href="{l}"><img src="{th}" alt="" width="1000" height="1000" decoding="async" loading="lazy"><b>{e(t)}</b><span>{e(sub)}</span></a></li>'
+        for l, t, sub, th in feats)
+    item_words = "".join(f'<li><a href="items/{i["slug"]}.html">{e(i["name"])}</a></li>' for i in ITEMS)
+    svc_rows = "".join(
+        f'<li><a href="services/{s["slug"]}.html"><b>{e(s["name"])}</b><span>{e(s["short"])}</span></a></li>' for s in SERVICES)
     main = f"""
 <section class="hero">
-  <div class="wrap">
+  <div class="wrap hero-grid">
     <div class="hero-copy">
       <h1>옮기기 힘든 짐,<br>30년 경력 강산자원이<br>1층까지 내려드립니다</h1>
-      <p class="hero-lead">서울·경기·인천에서 폐기물 내려드림, 쓰레기집 정리, 실내철거를 합니다. 혼자 옮기기 어려운 가구·가전·생활짐을 분해해 1층까지 내려드리고 실내철거 후 나온 잔재도 1층까지 내려드립니다. 사진만 보내시면 견적은 무료입니다.</p>
-      <ul class="hero-tags"><li>누적 10,000건 이상 현장</li><li>24시간 상담</li><li>100% 예약제 작업</li><li>사진 무료 견적</li></ul>
+      <p class="hero-lead">서울·경기·인천에서 폐기물 내려드림, 쓰레기집 정리, 실내철거를 합니다.</p>
       <div class="btn-row">{btn_kakao()}{btn_call()}</div>
+      <p class="hero-note">사진만 보내시면 견적은 무료입니다.</p>
     </div>
-    <div>
+    <figure class="hero-photo">
       <div class="ba" style="--pos:50%">
         {img(p, f"images/cases/{hero['id']}-after.jpg", hero['title'] + ' 작업 후', lazy=False)}
         {img(p, f"images/cases/{hero['id']}-before.jpg", hero['title'] + ' 작업 전', lazy=False, cls="ba-before")}
@@ -857,98 +863,94 @@ def build_home():
         <span class="ba-label l">작업 전</span><span class="ba-label r">작업 후</span>
         <input type="range" min="0" max="100" value="50" aria-label="작업 전후 비교 슬라이더">
       </div>
-      <p class="ba-caption">실제 작업 현장: {e(hero['title'])}. 가운데 막대를 좌우로 움직여 비교해 보세요.</p>
+      <figcaption class="ba-caption">실제 작업 현장: {e(hero['title'])}. 가운데 막대를 좌우로 움직여 비교해 보세요.</figcaption>
+    </figure>
+  </div>
+  <div class="wrap">
+    <dl class="ledger">
+      <div><dt>회사 운영</dt><dd>30년</dd></div>
+      <div><dt>누적 현장</dt><dd>10,000건 이상</dd></div>
+      <div><dt>상담</dt><dd>24시간</dd></div>
+      <div><dt>작업</dt><dd>100% 예약제</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head sec-head-split"><h2>작업 전과 후</h2>
+      <p>강산자원이 작업한 현장 사진입니다. 전후 사진 {len(CASES)}건은 <a href="cases/index.html">작업사례</a>에 모아 두었습니다.</p></div>
+    <div class="work-bento">{"".join(case_card(p, c) for c in home_cases[:5])}</div>
+    <h3 class="index-title">현장 기록과 안내 바로가기</h3>
+    <ol class="index-list">{index_rows}</ol>
+  </div>
+</section>
+
+{f'''<section class="section band-2">
+  <div class="wrap">
+    <div class="sec-head sec-head-split"><h2>현장 영상</h2><p>인스타그램에 올린 작업 영상입니다. <a href="videos.html">영상 더 보기</a></p></div>
+    <div class="videos rail">{videos}</div>
+  </div>
+</section>''' if videos else ''}
+
+<section class="section">
+  <div class="wrap side">
+    <div class="sec-head side-head"><h2>강산자원은 이런 업체입니다</h2>
+      <p>서울·경기·인천 수도권에서 일하는 폐기물 내려드림·실내철거 전문업체입니다. 가정, 사무실, 상가, 창고의 짐을 분해해 1층까지 내려드리고 쓰레기집 정리부터 철거와 원상복구까지 진행합니다.</p></div>
+    {sheet(C.FACTS)}
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head"><h2>맡기실 수 있는 일</h2>
+      <p>가정의 가구 한 점부터 쓰레기집, 상가 폐업 철거, 공사 현장 폐기물까지 강산자원이 처리하는 {len(SERVICES)}가지 작업입니다.</p></div>
+    <ol class="svc-rows">{svc_rows}</ol>
+    <div class="items-block">
+      <h3>버리실 물건으로 찾기</h3>
+      <p>품목마다 옮기는 방법과 주의할 점이 다릅니다.</p>
+      <ul class="word-list">{item_words}</ul>
     </div>
   </div>
 </section>
 
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><h2>작업 전과 후</h2>
-      <p>강산자원이 작업한 현장 사진입니다. 전후 사진 {len(CASES)}건은 <a href="cases/index.html">작업사례</a>에서 보실 수 있습니다.</p></div>
-    <div class="cases">{cases}</div>
-    <h3 class="sub-title">현장 기록과 안내 바로가기</h3>
-    <div class="feats">{details}</div>
-  </div>
-</section>
-
-{f'''<section class="section band">
-  <div class="wrap">
-    <div class="section-head"><h2>현장 영상</h2><p>인스타그램에 올린 작업 영상입니다. <a href="videos.html">영상 더 보기</a></p></div>
-    <div class="videos">{videos}</div>
-  </div>
-</section>''' if videos else ''}
-
-<section class="section">
-  <div class="wrap">
-    <div class="section-head"><h2>강산자원은 이런 업체입니다</h2>
-      <p>서울·경기·인천 수도권에서 일하는 폐기물 내려드림·실내철거 전문업체입니다. 가정, 사무실, 상가, 창고의 짐을 분해해 1층까지 내려드리고 쓰레기집 정리부터 철거와 원상복구까지 진행합니다.</p></div>
-    {sheet(C.FACTS)}
-  </div>
-</section>
-
-<section class="section band">
-  <div class="wrap">
-    <div class="section-head"><h2>맡기실 수 있는 일</h2>
-      <p>가정의 가구 한 점부터 쓰레기집, 상가 폐업 철거, 공사 현장 폐기물까지 강산자원이 처리하는 {len(SERVICES)}가지 작업입니다.</p></div>
-    <div class="svc-grid">{svc_items}</div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <div class="section-head"><h2>버리실 물건으로 찾기</h2><p>품목마다 옮기는 방법과 주의할 점이 다릅니다.</p></div>
-    <ul class="chips chips-lg">{item_chips}</ul>
-  </div>
-</section>
-
-<section class="section band">
-  <div class="wrap">
-    <div class="section-head"><h2>강산자원에 맡기는 이유</h2></div>
-    <div class="why">{why}</div>
+    <div class="sec-head"><h2>강산자원에 맡기는 이유</h2></div>
+    <div class="why why-rows">{why}</div>
   </div>
 </section>
 
 <section class="section">
   <div class="wrap split">
     <div>
-      <div class="section-head"><h2>견적부터 마무리까지</h2>
+      <div class="sec-head"><h2>견적부터 마무리까지</h2>
         <p>가격은 작업마다 물량과 현장 조건이 달라 사진을 보고 정합니다. 견적은 무료입니다.</p></div>
       {steps_html(C.PROCESS)}
-      <p style="margin-top:16px"><a href="estimate.html">단계별 준비물과 비용 기준 보기</a></p>
+      <p class="after-link"><a href="estimate.html">단계별 준비물과 비용 기준 보기</a></p>
     </div>
     <aside class="aside">{cta_card()}</aside>
   </div>
 </section>
 
-{f'''<section class="section band">
-  <div class="wrap">
-    <div class="section-head"><h2>강산 일상</h2><p>블로그에 올린 최근 현장 이야기입니다. <a href="daily/index.html">전체 보기</a></p></div>
-    <div class="posts">{posts}</div>
-  </div>
-</section>''' if posts else ''}
-
-
-
-<section class="section band">
-  <div class="wrap">
-    <div class="section-head"><h2>서울·경기·인천 어디든 출동합니다</h2><p>서울·경기·인천 수도권 전 지역에 출동합니다. 작업은 예약제이며 당일 출동 가능 여부는 그날 일정에 따라 상담으로 안내합니다.</p></div>
-    <div class="table-wrap"><table><tbody>{area_rows}</tbody></table></div>
+<section class="section">
+  <div class="wrap side">
+    <div class="sec-head side-head"><h2>서울·경기·인천 어디든 출동합니다</h2><p>서울·경기·인천 수도권 전 지역에 출동합니다. 작업은 예약제이며 당일 출동 가능 여부는 그날 일정에 따라 상담으로 안내합니다.</p></div>
+    <div class="table-wrap"><table class="area-table"><tbody>{area_rows}</tbody></table></div>
   </div>
 </section>
 
 <section class="section">
   <div class="wrap">
-    <div class="section-head"><h2>고객 후기</h2><p>당근 동네업체에 남겨주신 후기 중 일부입니다. <a href="reviews.html">후기 더 보기</a></p></div>
+    <div class="sec-head sec-head-split"><h2>고객 후기</h2><p>당근 동네업체에 남겨주신 후기 중 일부입니다. <a href="reviews.html">후기 더 보기</a></p></div>
     <div class="reviews">{reviews}</div>
   </div>
 </section>
 
-<section class="section band">
-  <div class="wrap">
-    <div class="section-head"><h2>자주 묻는 질문</h2></div>
+<section class="section">
+  <div class="wrap side">
+    <div class="sec-head side-head"><h2>자주 묻는 질문</h2><p><a href="faq.html">질문 전체 보기</a></p></div>
     {faq_html(C.GENERAL_FAQS[:8], open_first=True)}
-    <p style="margin-top:16px"><a href="faq.html">질문 전체 보기</a></p>
   </div>
 </section>
 """
