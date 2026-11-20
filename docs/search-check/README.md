@@ -4,3 +4,9 @@
   실행: `SHOT_DIR=<저장 폴더> node docs/search-check/naver_check.js "키워드1" "키워드2" ...` (전역 설치된 playwright 사용)
 - `naver-2026-11-09.json`: 첫 점검 결과(기준). 다음 점검 결과와 키워드별로 비교합니다.
 - 1페이지 노출 기준이며, 로그인·기기·지역에 따라 결과가 다를 수 있습니다.
+
+## AI 검색 점검
+
+- `ai-prompt-list.md`: ChatGPT·Gemini 등에 같은 질문을 던져 `gangsanjawon.com`이 인용되는지 보는 고정 질문 15개와 기록표. 첫 점검은 2026-12-05 이후, 이후 월 1회.
+- 결과 파일 이름: `ai-YYYY-MM-DD.json` (또는 표를 복사한 `ai-YYYY-MM-DD.md`).
+- AI 답변은 세션마다 달라지므로 한 번의 결과로 순위를 말하지 않습니다. 같은 날 네이버·구글 점검(`naver_check.js`)과 함께 기록합니다.

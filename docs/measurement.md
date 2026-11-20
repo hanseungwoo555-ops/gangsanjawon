@@ -17,8 +17,13 @@
 
 | 이벤트 | 언제 | 함께 보내는 값 |
 |---|---|---|
-| `click_call` | `tel:` 링크 클릭 | `page_path`, `button_location`(상단·본문·하단·고정), `content_group`(home·service·item·case·column·region·process 등), `content_topic`(페이지 slug) |
-| `click_kakao` | 카카오톡 채널·채팅 링크 클릭 | 위와 같음 |
+| `click_call` | `tel:` 링크 클릭 | `channel`(call), `region`(지역 페이지면 지역 이름), `page_path`, `button_location`(상단·본문·하단·고정), `content_group`(home·service·item·case·column·region 등), `content_topic`(페이지 slug) |
+| `click_kakao` | 카카오톡 채널·채팅 링크 클릭 | 위와 같음 (`channel`=kakao) |
+| `contact_click` | 위 두 버튼 클릭 시 함께 전송 | 위와 같은 값 (GA4에서 채널 구분 없이 한 번에 볼 때) |
+
+- 버튼에는 `data-loc`, `data-channel`, `data-region` 이 붙습니다. 지역 페이지의 버튼에는 그 지역 이름이 `data-region` 으로 들어가 지역별 클릭을 나눠 볼 수 있습니다.
+- 전송 경로: `gtag`(GA4)가 있으면 GA4로, 없으면 `dataLayer` 로, 네이버 애널리틱스 `wcs` 가 있으면 `wcs.event` 로도 보냅니다.
+- GA4 맞춤 측정기준(이벤트 범위)에 `channel`, `region` 을 추가하면 보고서에서 지역·채널별로 나눠 볼 수 있습니다.
 
 - 전화번호, 이름, 주소, 상담 내용, 사진은 보내지 않습니다.
 - 문서 전체에 리스너 하나만 있어 한 번 클릭에 한 번만 기록됩니다. `preventDefault` 를 쓰지 않아 전화·카톡 이동을 막지 않습니다.

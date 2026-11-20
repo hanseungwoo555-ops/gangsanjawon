@@ -21,7 +21,10 @@ import case_data as CDT
 import columns as CL
 import content as C
 import content_more as M
+import insta_cases as IC
+import page_seo as PS
 import region_info as RI
+import region_seo as RS
 import soften as SF
 import topic_qa as QA
 
@@ -317,12 +320,23 @@ ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><pa
 
 
 def btn_call(label=None, loc="본문"):
-    """전화 버튼. data-loc(상단·본문·하단·고정)은 클릭 측정(click_call)에 위치로 쓰인다."""
-    return f'<a class="btn btn-call" href="tel:{B["phone"].replace("-", "")}" data-loc="{loc}">{ICON_PHONE}<span>{e(label or B["phone"])}</span></a>'
+    """전화 버튼. data-loc(상단·본문·하단·고정), data-channel, data-region 은 클릭 측정에 쓰인다."""
+    return (f'<a class="btn btn-call" href="tel:{B["phone"].replace("-", "")}" data-loc="{loc}" data-channel="call"'
+            f'{region_attr()}>{ICON_PHONE}<span>{e(label or B["phone"])}</span></a>')
 
 
 def btn_kakao(label="카톡으로 사진 견적", loc="본문"):
-    return f'<a class="btn btn-kakao" href="{B["kakao_chat"]}" target="_blank" rel="noopener" data-loc="{loc}">{ICON_CHAT}<span>{e(label)}</span></a>'
+    return (f'<a class="btn btn-kakao" href="{B["kakao_chat"]}" target="_blank" rel="noopener" data-loc="{loc}" data-channel="kakao"'
+            f'{region_attr()}>{ICON_CHAT}<span>{e(label)}</span></a>')
+
+
+# 지역 페이지를 그리는 동안 그 지역 이름을 버튼에 붙인다 (지역별 클릭 측정).
+PAGE_REGION = [""]
+
+
+def region_attr():
+    reg = PAGE_REGION[0]
+    return f' data-region="{e(reg)}"' if reg else ''
 
 
 def menu_groups():
@@ -383,6 +397,7 @@ def content_group(path):
 
 def page(path, title, desc, main, head_html="", crumbs=None, ld=None, head_title=None,
          og_photo=None, og_sub=None, indexable=True, canonical=None, images=None, lead_thumb=True):
+    desc = PS.PAGE_DESC.get(path) or desc
     full_title = fit(head_title or f"{title} | 강산자원", 40)
     if not full_title.endswith("강산자원") and not full_title.startswith("강산자원"):
         full_title = fit(title, 40 - len(" | 강산자원")) + " | 강산자원"
@@ -610,9 +625,9 @@ def faq_ld(faqs):
     return {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in faqs]}
 
 
-def head(title, lead, eyebrow=""):
+def head(title, lead="", eyebrow=""):
     # 제목 위 작은 꼬리표는 넣지 않는다 (분류는 상단 경로 표시에 이미 있음)
-    return f'<h1>{e(title)}</h1><p>{e(lead)}</p>'
+    return f'<h1>{e(title)}</h1>' + (f'<p>{e(lead)}</p>' if lead else '')
 
 
 def img(path_from, src, alt, w=900, h=1200, lazy=True, cls=""):
@@ -1095,10 +1110,15 @@ def build_cases():
         f'<button type="button" data-filter="{k}" aria-pressed="false">{e(n)}</button>' for k, n, _ in CATS)
     cards = "".join(case_card(p, c, lazy=i > 3) for i, c in enumerate(CASES))
     details = "".join(detail_card(p, d, lazy=i > 1) for i, d in enumerate(CDT.DETAILS))
+    insta = "".join(insta_case_card(p, c, lazy=i > 0) for i, c in enumerate(IC.INSTA_CASES))
     main = f"""
 <section class="section" id="detail"><div class="wrap">
   <div class="section-head"><h2>현장 상세 기록 {len(CDT.DETAILS)}건</h2><p>고객 요청, 확인된 현장 조건, 작업 과정, 실제 완료 범위를 블로그 원문과 사진으로 정리했습니다.</p></div>
   <div class="cases">{details}</div>
+</div></section>
+<section class="section band" id="insta"><div class="wrap">
+  <div class="section-head"><h2>인스타그램 현장 기록 {len(IC.INSTA_CASES)}건</h2><p><a href="{B['instagram']}" target="_blank" rel="noopener">@gangsan_30</a>에 올린 현장을 글로 정리했습니다. 게시물에 지역이 적혀 있지 않은 현장은 지역을 쓰지 않고 품목·서비스 사례로만 분류했습니다.</p></div>
+  <div class="cases">{insta}</div>
 </div></section>
 <section class="section band"><div class="wrap">
   <div class="section-head"><h2>분류별로 보기</h2></div>
@@ -1122,10 +1142,12 @@ def build_cases():
         rel_svc = link_cards(p, [(f"services/{sid}.html", SVC[sid]["name"], SVC[sid]["short"]) for sid in svc_ids])
         others = ", ".join(f'<a href="{kk}.html">{e(nn)}</a>' for kk, nn, _ in CATS if kk != k)
         cd = details_where(lambda x: x["cat"] == k)
+        ic = [x for x in IC.INSTA_CASES if x["cat"] == k]
         main = f"""
 <section class="section"><div class="wrap">
   <p class="note" style="margin-bottom:28px"><strong>{e(n)} 사례 {len(cs)}건</strong> {e(d)} 다른 분류: {others}</p>
   {f'<h2 class="sub-title">현장 상세 기록</h2><div class="cases" style="margin-bottom:32px">{"".join(detail_card(p, x, lazy=False) for x in cd)}</div>' if cd else ''}
+  {f'<h2 class="sub-title">인스타그램 현장 기록</h2><div class="cases" style="margin-bottom:32px">{"".join(insta_case_card(p, x, lazy=False) for x in ic)}</div>' if ic else ''}
   <div class="cases">{"".join(case_card(p, c, lazy=i > 3) for i, c in enumerate(cs))}</div>
 </div></section>
 <section class="section band"><div class="wrap"><div class="section-head"><h2>관련 서비스</h2></div>{rel_svc}</div></section>"""
@@ -1133,6 +1155,72 @@ def build_cases():
              main, head(f"{n} 작업사례", d, "작업사례"),
              crumbs=[("cases/index.html", "작업사례"), (p, n)], og_photo=case_photo(cs[0]["id"]),
              og_sub=f"직접 작업한 {n} 현장 {len(cs)}건", images=case_imgs(cs))
+
+
+def insta_case_card(path, c, lazy=True):
+    """인스타그램 현장 기록 카드. 사진이 한 장뿐이므로 전후 비교 카드와 모양을 나눈다."""
+    href = rel(path, f"cases/instagram/{c['slug']}.html")
+    return f"""<article class="case case-insta">
+  <a class="case-single" href="{href}">{img(path, f"images/insta/{c['code']}.jpg", c['title'] + ' 인스타그램 현장 사진', 720, 900, lazy=lazy)}</a>
+  <h3><a href="{href}">{e(c['title'])}</a></h3>
+  <p>{e(c['summary'])}</p>
+  <span class="tag">{e(CAT_NAME[c['cat']])} · 인스타그램 {c['date']}</span>
+</article>"""
+
+
+def build_insta_cases():
+    """인스타그램 게시물을 글로 정리한 현장 기록 페이지. 게시물에 지역이 없으면 지역을 쓰지 않는다."""
+    for c in IC.INSTA_CASES:
+        p = f"cases/instagram/{c['slug']}.html"
+        src = f"https://www.instagram.com/reel/{c['code']}/"
+        site = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in c["site"] if v)
+        links = [(f"services/{sid}.html", SVC[sid]["name"], SVC_SUB[sid]) for sid in c["services"] if sid in SVC]
+        links += [(f"items/{i['slug']}.html", i["name"] + " 내려드림", i["sub"]) for i in ITEMS if i["slug"] in c["items"]]
+        links += [(f"column/{CL.TOPIC[t]['slug']}.html", CL.TOPIC[t]["title"], "칼럼") for t in c["columns"] if t in CL.TOPIC]
+        links.append((f"cases/{c['cat']}.html", CAT_NAME[c["cat"]] + " 사례 모음", "같은 분류의 다른 현장"))
+        links.append(("estimate.html#process", "진행 절차와 비용 기준", "단계별 준비사항"))
+        main = f"""
+<section class="section">
+  <div class="wrap split">
+    <article class="prose case-detail">
+      <p class="muted meta"><span>게시물 날짜 {c['date']}</span><span>출처: <a href="{src}" target="_blank" rel="noopener">인스타그램 @gangsan_30 원문</a></span><span>지역: 게시물에 적혀 있지 않음</span></p>
+      <p class="note"><strong>요약</strong> {e(c['summary'])}</p>
+      <h2>어떤 요청이었나요</h2>
+      <p>{e(c['request'])}</p>
+      <h2>확인된 현장 정보</h2>
+      <dl class="facts">{site}</dl>
+      <h2>작업 전 문제</h2>
+      <ul class="checklist">{"".join(f"<li>{e(x)}</li>" for x in c['problems'])}</ul>
+      <h2>작업 과정과 해결 방법</h2>
+      <ol class="plain-ol">{"".join(f"<li>{e(x)}</li>" for x in c['process'])}</ol>
+      <h2>완료 범위</h2>
+      <ul class="checklist">{"".join(f"<li>{e(x)}</li>" for x in c['scope'])}</ul>
+      <p class="muted">{e(c['scope_note'])}</p>
+      <h2>현장 사진</h2>
+      <div class="dphotos"><figure class="dphoto dphoto-process">{img(p, f"images/insta/{c['code']}.jpg", c['title'] + ' 인스타그램 현장 사진', 720, 900)}
+      <figcaption>{e(c['photo_caption'])}</figcaption></figure></div>
+      <p>영상과 함께 남은 사진은 <a href="{src}" target="_blank" rel="noopener">인스타그램 원문 게시물</a>에서 볼 수 있습니다.</p>
+      <h2>비슷한 상황이라면 이렇게 준비해 주세요</h2>
+      <ul class="checklist"><li>버릴 물건 전체 사진과 큰 물건 하나씩 찍은 사진</li><li>동네 이름(동까지), 층수, 엘리베이터 유무</li><li>1층에 짐을 내려놓을 장소와 작업 시간 제한</li><li>희망 날짜와 남길 물건</li></ul>
+      <div class="btn-row">{btn_kakao()}{btn_call()}</div>
+      <h2>관련 서비스·품목</h2>
+      {link_cards(p, links)}
+    </article>
+    <aside class="aside">{cta_card()}</aside>
+  </div>
+</section>
+<section class="section band"><div class="wrap"><div class="section-head"><h2>다른 인스타그램 현장 기록</h2></div>
+<div class="cases">{"".join(insta_case_card(p, x) for x in IC.INSTA_CASES if x is not c)}</div></div></section>"""
+        ld = [{"@type": "Article", "headline": c["title"], "description": c["summary"], "inLanguage": "ko-KR",
+               "datePublished": c["date"], "dateModified": c["date"],
+               "image": [url(f"images/insta/{c['code']}.jpg")],
+               "author": {"@id": url("index.html") + "#business"}, "publisher": {"@id": url("index.html") + "#business"},
+               "mainEntityOfPage": url(p), "isBasedOn": src,
+               "about": {"@type": "Service", "name": SVC[c["service"]]["name"], "provider": {"@id": url("index.html") + "#business"}}}]
+        page(p, c["title"], c.get("desc") or c["summary"], main, head(c["title"]),
+             crumbs=[("cases/index.html", "작업사례"), (f"cases/{c['cat']}.html", CAT_NAME[c["cat"]]), (p, c.get("crumb") or c["title"][:12])],
+             ld=ld, og_photo=os.path.join(DATA, "insta_img", c["code"] + ".jpg"),
+             og_sub=f"{CAT_NAME[c['cat']]} · 인스타그램 {c['date']}", images=[f"images/insta/{c['code']}.jpg"], lead_thumb=False)
 
 
 def build_case_details():
@@ -1562,6 +1650,10 @@ def build_columns(topic_kws):
 
 # ---------------------------------------------------------------- 지역별 안내
 def local_title(r, items):
+    """지역 페이지 제목. 지역마다 직접 쓴 제목을 쓰고, 없으면 예전 규칙으로 만든다."""
+    cp = RS.get(r["slug"])
+    if cp and cp.get("title"):
+        return cp["title"]
     rests = {it["rest"] for it in items}
     tail = "폐기물 내려드림"
     if any("철거" in x for x in rests):
@@ -1609,18 +1701,26 @@ def build_locals(region_kws):
     for area in ("서울", "경기", "인천"):
         rs = [r for r in CL.REGION.values() if r["area"] == area]
         blocks += f'<h2 style="margin-top:32px">{area}</h2>' + link_cards(p, [("local/" + r["slug"] + ".html", local_title(r, region_kws[r["slug"]]), ", ".join(clean_dongs(r)[:6]) or "전 지역") for r in rs])
-    page(p, "지역별 폐기물·철거 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역별 폐기물 내려드림·철거 안내.",
-         f'<section class="section"><div class="wrap"><div class="prose"><p>지역을 고르면 출동 가능한 동네, 상담 때 확인할 조건, 그 지역에서 기록한 작업사례, 직접 버릴 때 참고할 안내가 나옵니다.</p></div>{blocks}</div></section>',
-         head("지역별 폐기물·철거 안내", "서울·경기·인천 동네별 안내입니다."), crumbs=[(p, "지역별 안내")], og_sub="서울·경기·인천 지역별 안내")
+    page(p, "지역별 폐기물 수거 업체 안내", f"서울·경기·인천 {len(CL.REGION)}개 지역 폐기물 수거 업체 안내. 지역별 반출 조건, 실제 사례, 구청 배출 방법 비교.",
+         f'<section class="section"><div class="wrap"><div class="prose"><p>지역을 고르면 출동 가능한 동네, 현장에서 확인하는 반출 조건, 자주 받는 질문 7가지와 답, 그 지역에서 기록한 작업사례, 직접 버릴 때 참고할 구청 안내가 나옵니다.</p></div>{blocks}</div></section>',
+         head("지역별 폐기물 수거 업체 안내", "서울·경기·인천 동네별 폐기물 수거 업체 안내입니다."), crumbs=[(p, "지역별 안내")], og_sub="서울·경기·인천 지역별 폐기물 수거 업체")
     regions = list(CL.REGION.values())
     for r in regions:
         p = f"local/{r['slug']}.html"
         info = RI.REGION_INFO.get(r["slug"], {})
         items = region_kws[r["slug"]]
         title = local_title(r, items)
+        cp = RS.get(r["slug"]) or {}
+        h1_text = cp.get("h1") or title
+        desc = cp.get("desc") or f"{r['name']} 가구·가전·짐 1층까지 내려드림, 실내철거. 확인할 조건, 지역 사례, 견적 준비사항. 강산자원 사진 무료 견적."
+        lead_text = cp.get("lead") or f"강산자원은 {r['name']} 가정집·사무실·상가에서 폐기물 수거와 1층까지 내려드림, 실내철거 작업을 합니다. 사진으로 무료 견적을 안내하고 작업은 예약한 날짜에 진행합니다."
+        PAGE_REGION[0] = r["name"]
         cards = region_cards(r, items)
-        # ④ 이 지역으로 확인된 사례
-        loc_details = details_where(lambda d: d["region"] == r["slug"])
+        # 이 지역으로 확인된 사례 (서울·경기·인천 큰 지역 페이지는 그 권역 전체)
+        if r["slug"] in ("seoul", "gyeonggi", "incheon"):
+            loc_details = details_where(lambda d: CL.REGION[d["region"]]["area"] == r["area"])
+        else:
+            loc_details = details_where(lambda d: d["region"] == r["slug"])
         loc_cards = [CASE[cid] for cid, rs in CASE_REGION_ALL.items() if rs == r["slug"] and cid in CASE and cid not in CDT.CARD_TO_DETAIL]
         if loc_details or loc_cards:
             case_head = f"{r['name']}에서 작업한 사례"
@@ -1630,7 +1730,7 @@ def build_locals(region_kws):
             area_label = {"서울": "서울 지역", "경기": "수도권", "인천": "수도권"}[r["area"]]
             sim = details_where(lambda d: d["region"] != r["slug"] and (CL.REGION[d["region"]]["area"] == r["area"] or r["area"] != "서울"))[:3]
             case_head = f"{area_label}의 유사 사례"
-            case_note = f"{r['name']}에서 공개한 작업 기록은 아직 없습니다. 아래는 다른 지역 현장이며 각 사례에 실제 지역을 적었습니다."
+            case_note = f"{r['name']}에서 공개한 내려드림 작업 기록은 아직 없습니다. 아래는 다른 지역 현장이며 각 사례에 실제 지역을 적었습니다."
             case_html = "".join(detail_card(p, d) for d in sim)
         cs = pick_cases(None, r["slug"] + "x", 6, [c["id"] for c in loc_cards])
         gallery_html = (f'<h3 class="sub-title">다른 현장의 전후 사진</h3><p class="muted">지역 정보가 기록되지 않은 현장 사진입니다. {e(r["name"])} 작업 사진이 아닙니다.</p>{pair_gallery(p, cs, "강산자원")}')
@@ -1642,7 +1742,7 @@ def build_locals(region_kws):
         exp_items += [f'<li>{e(c["desc"] or c["title"])} (블로그 현장 기록, {c["date"]})</li>'
                       for c in loc_cards if c.get("post")][:6]
         exp_html = ("<ul class=\"checklist\">" + "".join(exp_items) + "</ul>") if exp_items \
-            else f'<p class="muted">{e(r["name"])}에서 공개한 작업 기록은 아직 없습니다. 위 표는 상담 때 확인하는 항목이며 이 지역 작업 이력을 뜻하지 않습니다.</p>'
+            else f'<p class="muted">{e(r["name"])}에서 공개한 내려드림 작업 기록은 아직 없습니다. ' + (f'{e(cp["record"])} ' if cp.get("record") else "") + '위 표는 상담 때 확인하는 항목이며 이 지역 작업 이력을 뜻하지 않습니다.</p>'
         # 지자체 공식 안내
         off = info.get("official")
         off_html = ""
@@ -1663,14 +1763,13 @@ def build_locals(region_kws):
             near = (same[k:] + same[:k])[:4]
             near_head = f"{r['area']} 다른 지역"
         dongs = clean_dongs(r)
-        svc_phrase = ", ".join(REGION_KIND_LINK[k][0] for k in dict.fromkeys(CL.RTYPE.get(it["rest"], "general") for it in items) if k not in ("report", "company", "general")) or "대형 짐 내려드림, 가전 내려드림, 이사 폐기물, 철거"
-        summary = (f"강산자원은 {r['name']} 가정집·사무실·상가에서 {svc_phrase} 작업을 합니다. "
-                   f"사진을 보내주시면 무료로 견적을 안내하고 작업은 예약한 날짜에 진행합니다. {CL.LD.NEAR_TEXT[r['near']]}")
+        qa7 = RS.qa(r, CL.office(r), loc_details, loc_cards, info)
         main = f"""
 <section class="section">
   <div class="wrap split">
     <article class="prose">
-      <p class="note"><strong>① 요약</strong> {e(summary)}</p>
+      <p class="note"><strong>① 요약</strong> {e(lead_text)}</p>
+      <p class="muted"><b>수거</b>는 집 안에서 물건을 꺼내 분해하는 것, <b>운반</b>은 계단·엘리베이터·사다리차로 1층(건물 밖 정한 장소)까지 내려드리는 것, <b>철거</b>는 붙박이장·주방·가벽 같은 실내철거와 잔재 내림입니다. 내려드린 폐기물의 배출·처리 방법은 상담 때 안내합니다.</p>
       <h2>② 서비스 가능 동네</h2>
       {f'<ul class="chips">{"".join(f"<li>{e(d)}</li>" for d in dongs)}</ul>' if dongs else ""}
       <p class="muted">{e(r['name'])} 전 지역으로 출동합니다. 목록은 대표 동 이름이며 목록에 없는 동도 출동합니다. 이 목록은 작업 이력을 뜻하지 않습니다.</p>
@@ -1680,7 +1779,10 @@ def build_locals(region_kws):
       <div class="table-wrap"><table><thead><tr><th scope="col">확인 항목</th><th scope="col">확인할 내용</th></tr></thead><tbody>{check_html}</tbody></table></div>
       <h3>{e(r['name'])}에서 실제로 수행한 작업</h3>
       {exp_html}
-      <h2>④ {e(case_head)}</h2>
+      <h2>④ {e(r['name'])} 폐기물 수거 업체에게 자주 묻는 7가지</h2>
+      <p class="muted">출동과 예약, 품목과 범위, 무거운 가구 반출, 엘리베이터가 없을 때 확인할 점, 사진 견적에 필요한 자료, 구청 신고 배출과의 차이, {e(r['name'])} 실제 사례를 순서대로 정리했습니다.</p>
+      <div class="qa-block">{"".join(f'<div class="qa-item" id="q{_i + 1}"><h3>{e(_q)}</h3><p>{e(_a)}</p></div>' for _i, (_q, _a) in enumerate(qa7))}</div>
+      <h2>⑤ {e(case_head)}</h2>
       <p>{e(case_note)}</p>
     </article>
     <aside class="aside">{cta_card()}</aside>
@@ -1692,30 +1794,35 @@ def build_locals(region_kws):
 </div></section>
 <section class="section"><div class="wrap split">
   <article class="prose">
-    <h2>⑤ {e(r['name'])} 관련 품목과 서비스</h2>
+    <h2>⑥ {e(r['name'])} 관련 품목과 서비스</h2>
     {link_cards(p, cards)}
     <p>품목별 안내: <a href="../items/wardrobe.html">장롱</a>, <a href="../items/bed-mattress.html">침대·매트리스</a>, <a href="../items/sofa.html">소파</a>, <a href="../items/fridge.html">냉장고</a>, <a href="../items/office-furniture.html">사무용 가구</a></p>
-    <h2>⑥ {e(r['name'])} 자주 묻는 질문</h2>
+    <h2>⑦ {e(r['name'])} 자주 묻는 질문</h2>
     {faq_html(faqs, open_first=True)}
-    <h2>⑦ 견적 준비사항과 문의</h2>
+    <h2>⑧ 견적 준비사항과 문의</h2>
     <ul class="checklist"><li>버릴 물건 전체 사진과 큰 물건 하나씩 찍은 사진</li><li>동네 이름(동까지), 층수, 엘리베이터 유무</li><li>1층에 짐을 내려놓을 장소와 작업 시간 제한</li><li>희망 날짜와 시간대, 남길 물건</li></ul>
     <p>단계별 준비사항과 비용 기준은 <a href="../estimate.html">무료견적·작업 절차</a>에 정리해 두었습니다.</p>
     <div class="btn-row">{btn_kakao()}{btn_call()}</div>
-    <h2>⑧ {e(near_head)}</h2>
+    <h2>⑨ {e(near_head)}</h2>
     <ul>{"".join(f'<li><a href="{x["slug"]}.html">{e(x["name"])} 폐기물·철거 안내</a></li>' for x in near)}</ul>
   </article>
-  <aside class="aside"><div class="note"><strong>이 지역 안내 순서</strong><ol><li>요약</li><li>서비스 가능 동네</li><li>확인할 조건</li><li>작업사례</li><li>품목과 서비스</li><li>FAQ</li><li>견적 준비</li><li>인근 지역</li></ol></div></aside>
+  <aside class="aside"><div class="note"><strong>이 지역 안내 순서</strong><ol><li>요약</li><li>서비스 가능 동네</li><li>확인할 조건</li><li>자주 묻는 7가지</li><li>작업사례</li><li>품목과 서비스</li><li>FAQ</li><li>견적 준비</li><li>인근 지역</li></ol></div></aside>
 </div></section>"""
         imgs = ([x["src"] for d in loc_details for x in DETAIL_PHOTOS[d["slug"]]] + [f"images/pair/{c['id']}.jpg" for c in cs] + case_imgs(cs))
-        ld = [{"@type": "Service", "name": title, "serviceType": "폐기물 내려드림(1층까지), 실내철거",
+        ld = [{"@type": "Service", "name": h1_text, "description": desc,
+               "serviceType": "폐기물 수거(집 안에서 분해)와 1층까지 내려드림, 실내철거·부분철거 후 잔재 내림",
+               "url": url(p),
                "provider": {"@id": url("index.html") + "#business"},
-               "areaServed": {"@type": "AdministrativeArea", "name": r["name"], "containsPlace": [{"@type": "Place", "name": d} for d in dongs]},
-               "image": [url(x) for x in imgs[:6]]}, faq_ld(faqs)]
+               "areaServed": {"@type": "AdministrativeArea", "name": r["name"], **({"containsPlace": [{"@type": "Place", "name": d} for d in dongs]} if dongs else {})},
+               "availableChannel": {"@type": "ServiceChannel", "serviceUrl": B["kakao_chat"],
+                                    "servicePhone": {"@type": "ContactPoint", "telephone": B["phone_intl"], "contactType": "customer service"}},
+               "image": [url(x) for x in imgs[:6]]}, faq_ld(qa7 + faqs)]
         og = detail_pair(loc_details[0]) if loc_details else case_photo(cs[0]["id"])
-        page(p, title, f"{r['name']} 가구·가전·짐 1층까지 내려드림, 실내철거. 확인할 조건, 지역 사례, 견적 준비사항. 강산자원 사진 무료 견적.",
-             main, head(title, f"{r['name']} 전 지역 출동. 사진으로 무료 견적을 드리고 작업은 예약제로 진행합니다.", "지역별 안내"),
+        page(p, title, desc,
+             main, head(h1_text),
              crumbs=[("local/index.html", "지역별 안내"), (p, r["name"])], ld=ld,
-             og_photo=og, og_sub=f"{r['name']} 전 지역 출동 · 사진 무료 견적", images=imgs, lead_thumb=False)
+             og_photo=og, og_sub=f"{r['name']} 폐기물 수거·내려드림 · {cp.get('items', '사진 무료 견적')}"[:70], images=imgs, lead_thumb=False)
+        PAGE_REGION[0] = ""
 
 
 def clean_dongs(r):
@@ -1931,6 +2038,7 @@ if __name__ == "__main__":
     build_items()
     build_cases()
     build_case_details()
+    build_insta_cases()
     build_videos()
     # build_daily()  # 2026-11-10: 블로그 원문(수거·운반 표현 포함)을 홈페이지에 옮겨 싣지 않음
     build_estimate()
@@ -1947,7 +2055,8 @@ if __name__ == "__main__":
         open(os.path.join(DIST, _gone), "w", encoding="utf-8").write(
             f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex,follow">'
             f'<link rel="canonical" href="{url("cases/index.html")}"><meta http-equiv="refresh" content="0; url=../index.html">'
-            f'<title>작업사례 | 강산자원</title></head><body><p><a href="../index.html">작업사례로 이동</a></p></body></html>')
+            f'<meta name="description" content="이 주소의 현장 기록은 작업사례 목록으로 옮겼습니다.">'
+            f'<title>옮긴 작업사례 안내 | 강산자원</title></head><body><p><a href="../index.html">작업사례로 이동</a></p></body></html>')
     with open(LASTMOD_FILE, "w", encoding="utf-8") as f:
         json.dump(dict(sorted(LASTMOD.items())), f, ensure_ascii=False, indent=0)
     n_idx = sum(1 for p in PAGES if p[4])

@@ -411,6 +411,12 @@ th { color: var(--muted); font-weight: 700; white-space: nowrap; }
 .split > * { min-width: 0; }
 .prose { grid-template-columns: minmax(0, 1fr); }
 .qa-sec { display: grid; gap: 1em; min-width: 0; }
+/* 지역 페이지: 폐기물 수거 업체에게 자주 묻는 7가지 (질문·답을 그대로 읽을 수 있게 편다) */
+.qa-block { display: grid; gap: 18px; margin: 8px 0 24px; }
+.qa-item { border-left: 3px solid var(--brand); padding: 2px 0 2px 14px; scroll-margin-top: 90px; }
+.qa-item h3 { font-size: 1.05rem; margin: 0 0 6px; color: var(--brand); }
+.qa-item p { margin: 0; }
+@media (max-width: 640px) { .qa-item { padding-left: 10px; } }
 /* 홈: 하위 페이지로 가는 정사각형 이미지 카드 */
 .feats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 20px; }
 .feat { display: grid; gap: 8px; align-content: start; }
@@ -605,3 +611,8 @@ h2 { letter-spacing: -.01em; }
 .work-bento .case { align-content: start; }
 @media (max-width: 860px) { .hero-grid { grid-template-columns: minmax(0, 1fr) !important; } }
 .prose h2, .qa-sec h2 { font-size: clamp(1.6rem, 1.1rem + 1.6vw, 2.4rem); }
+
+/* 인스타그램 현장 기록 카드: 사진 한 장 + 제목 */
+.case-single { display: block; border-radius: var(--radius); overflow: hidden; background: var(--line); }
+.case-single img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
+.case-insta .tag { color: var(--muted, #6b7280); font-size: .85rem; }
