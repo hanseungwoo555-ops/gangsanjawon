@@ -1,0 +1,415 @@
+{
+ "date": "2026-11-26",
+ "device": "PC 1280px, 비로그인",
+ "note": "'소파 수거','장롱 버리기','침대 프레임 수거'는 보안 문구 감지가 떴지만 정상 검색 결과 페이지였음(제목 확인, 재시도 동일)",
+ "results": [
+  {
+   "query": "강산자원",
+   "pages": [
+    "/",
+    "/cases/index.html",
+    "/column/index.html",
+    "/items/index.html",
+    "/local/index.html",
+    "/services/index.html",
+    "/videos.html"
+   ],
+   "first_y": 1451,
+   "sections": [],
+   "shot": 0
+  },
+  {
+   "query": "강산자원 폐기물",
+   "pages": [
+    "/",
+    "/cases/index.html",
+    "/column/index.html",
+    "/items/index.html",
+    "/local/index.html",
+    "/services/index.html",
+    "/videos.html"
+   ],
+   "first_y": 1220,
+   "sections": [],
+   "shot": 1
+  },
+  {
+   "query": "강산자원 은평구",
+   "pages": [
+    "/",
+    "/cases/index.html",
+    "/column/index.html",
+    "/items/index.html",
+    "/local/index.html",
+    "/services/index.html",
+    "/videos.html"
+   ],
+   "first_y": 401,
+   "sections": [],
+   "shot": 2
+  },
+  {
+   "query": "영등포구 가정 폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "은평구 대형폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "은평구 폐기물 수거",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "증산동 폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "마포구 대형폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "마포구 폐기물 처리",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "서대문구 대형폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "용산 사무실 폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "용산구 대형폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "성북구 대형폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "안암동 침대 수거",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "구로구 폐가구 수거",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "구로구 지하창고 폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "부천 유품정리",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "노원구 유품정리",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "서초구 가정집 폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "강남구 대형폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "청담동 폐기물",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "쇼파 버리기",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "소파 수거",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "쓰레기집 청소",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "유품정리 비용",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "매트리스 버리는법",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "장롱 버리기",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "사무실 폐기물 처리",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "대형폐기물 수거 업체",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "유치원 놀이기구 수거",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "침대 프레임 수거",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "사무실 의자 버리기",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "gangsanjawon.com",
+   "pages": [
+    "/",
+    "/cases/index.html",
+    "/column/index.html",
+    "/dict.search",
+    "/items/index.html",
+    "/local/index.html",
+    "/nidlogin.login",
+    "/nidlogin.logout",
+    "/search.naver",
+    "/search/all",
+    "/services/index.html",
+    "/v5/search/gangsanjawon.com",
+    "/videos.html"
+   ],
+   "first_y": 0,
+   "sections": [],
+   "shot": 32
+  },
+  {
+   "query": "site:gangsanjawon.com",
+   "pages": [
+    "/",
+    "/cases/detail/bucheon-estate-family-help.html",
+    "/cases/detail/gangnam-kindergarten-rooftop-playground.html",
+    "/cases/detail/gangnam-office-interior-waste.html",
+    "/cases/detail/mapo-kids-room-wardrobe-sofa.html",
+    "/cases/detail/nowon-estate-cleanup.html",
+    "/cases/detail/seocho-move-out-empty-house.html",
+    "/cases/detail/seongbuk-anam-bed-frame.html",
+    "/cases/index.html",
+    "/column/index.html",
+    "/dict.search",
+    "/estimate.html",
+    "/items/index.html",
+    "/local/index.html",
+    "/nidlogin.login",
+    "/nidlogin.logout",
+    "/search.naver",
+    "/search/all",
+    "/services/index.html",
+    "/v5/search/site%3Agangsanjawon.com",
+    "/videos.html"
+   ],
+   "first_y": 0,
+   "sections": [],
+   "shot": 33
+  },
+  {
+   "query": "쇼파 소파 버리기와 수거 방법 비용 조건 분해 반출 강산자원",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  },
+  {
+   "query": "마포구 대형폐기물 폐기물 철거 강산자원",
+   "pages": [
+    "/",
+    "/cases/index.html",
+    "/column/index.html",
+    "/items/index.html",
+    "/local/index.html",
+    "/services/index.html",
+    "/videos.html"
+   ],
+   "first_y": 503,
+   "sections": [],
+   "shot": 35
+  },
+  {
+   "query": "강산자원 작업사례",
+   "pages": [
+    "/cases/detail/bucheon-estate-family-help.html",
+    "/cases/detail/gangnam-kindergarten-rooftop-playground.html",
+    "/cases/detail/gangnam-office-interior-waste.html",
+    "/cases/detail/mapo-kids-room-wardrobe-sofa.html",
+    "/cases/detail/nowon-estate-cleanup.html",
+    "/cases/detail/seocho-move-out-empty-house.html",
+    "/cases/detail/seongbuk-anam-bed-frame.html",
+    "/cases/index.html"
+   ],
+   "first_y": 843,
+   "sections": [],
+   "shot": 36
+  },
+  {
+   "query": "강산자원 유품정리",
+   "pages": [
+    "/estimate.html"
+   ],
+   "first_y": 1013,
+   "sections": [],
+   "shot": 37
+  },
+  {
+   "query": "강산자원 쓰레기집",
+   "pages": [
+    "/",
+    "/cases/index.html",
+    "/column/index.html",
+    "/items/index.html",
+    "/local/index.html",
+    "/services/index.html",
+    "/videos.html"
+   ],
+   "first_y": 205,
+   "sections": [],
+   "shot": 38
+  },
+  {
+   "query": "강산자원 소파",
+   "pages": [
+    "/items/index.html"
+   ],
+   "first_y": 205,
+   "sections": [],
+   "shot": 39
+  },
+  {
+   "query": "강산자원 마포구",
+   "pages": [
+    "/cases/detail/bucheon-estate-family-help.html",
+    "/cases/detail/gangnam-kindergarten-rooftop-playground.html",
+    "/cases/detail/gangnam-office-interior-waste.html",
+    "/cases/detail/mapo-kids-room-wardrobe-sofa.html",
+    "/cases/detail/nowon-estate-cleanup.html",
+    "/cases/detail/seocho-move-out-empty-house.html",
+    "/cases/detail/seongbuk-anam-bed-frame.html",
+    "/cases/index.html"
+   ],
+   "first_y": 1522,
+   "sections": [],
+   "shot": 40
+  },
+  {
+   "query": "노원구 중계동 부모님 유품정리 가족이 다시 살 집을 위한 정리",
+   "pages": [
+    "/cases/detail/bucheon-estate-family-help.html",
+    "/cases/detail/gangnam-kindergarten-rooftop-playground.html",
+    "/cases/detail/gangnam-office-interior-waste.html",
+    "/cases/detail/mapo-kids-room-wardrobe-sofa.html",
+    "/cases/detail/nowon-estate-cleanup.html",
+    "/cases/detail/seocho-move-out-empty-house.html",
+    "/cases/detail/seongbuk-anam-bed-frame.html",
+    "/cases/index.html"
+   ],
+   "first_y": 1519,
+   "sections": [],
+   "shot": 41
+  },
+  {
+   "query": "용산 사무실 의자 책상 테이블 수거 저녁 예약",
+   "pages": [],
+   "first_y": null,
+   "sections": [],
+   "shot": null
+  }
+ ]
+}
